@@ -18,7 +18,7 @@ deploy it to Heroku.
   
 Example usage (live demo):
 ---
-  * [http://request-header-parser-api.herokuapp.com/api/whoami](http://request-header-parser-api.herokuapp.com/api/whoami)
+  * [https://api-url-shortener-microservice.herokuapp.com/](https://api-url-shortener-microservice.herokuapp.com/)
 
 Example output:
 ---

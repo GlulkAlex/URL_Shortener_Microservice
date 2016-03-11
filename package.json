@@ -2,12 +2,14 @@
   "name": "api-basejump-url-shortener-microservice",
   "version": "0.0.1",
   "description": "A Node.js microservice app using Express 4",
-  "main": "http_Server.js",
+  "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node http_Server.js"
+    "start": "node app.js"
   },
-  "dependencies": {},
+  "dependencies": {
+    "mongodb": "2.1.7"
+  },
   "engines": {
     "node": "^4.2.3"
   },
