@@ -1,0 +1,15 @@
+{
+  "name": "API Basejump: URL Shortener Microservice",
+  "description": "A Node.js microservice app using Express 4",
+  "repository": "https://github.com/GlulkAlex/URL_Shortener_Microservice.git",
+  "logo": "favicon.ico",
+  "keywords": [
+    "node", 
+    "express", 
+    "api", 
+    "microservice",
+    "mongodb",
+    "url"  
+  ],
+  "image": "heroku/nodejs"
+}
