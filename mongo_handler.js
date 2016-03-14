@@ -71,6 +71,31 @@ var find_Documents = function(
   );      
 }
 
+// Example of 
+// running simple count commands against a collection 
+// using a Promise.
+/*
+MongoClient.connect('mongodb://localhost:27017/test', function(err, db) {
+  // Crete the collection for the distinct example
+  var collection = db.collection('countExample1_with_promise');
+  // Insert documents to perform distinct against
+  collection.insertMany([{a:1}, {a:2}
+    , {a:3}, {a:4, b:1}], {w: 1}).then(function(ids) {
+    // Perform a total count command
+    collection.count().then(function(count) {
+      test.equal(4, count);
+
+      // Peform a partial account where b=1
+      collection.count({b:1}).then(function(count) {
+        test.equal(1, count);
+
+        db.close();
+      });
+    });
+  });
+});
+*/
+
 // Connection URL
 var url = 'mongodb://localhost:27017/myproject';
 // Use connect method to connect to the Server

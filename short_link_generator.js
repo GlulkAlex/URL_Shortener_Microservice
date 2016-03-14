@@ -76,10 +76,12 @@ function short_Link_Generator(
       
   return result;    
 }
+
 // assigning to exports will not modify module, must use module.exports
 exports.get_Short_Link = short_Link_Generator;
 exports.rand_Bool = random_Boolean;
-exports.rand_Bool_Gen = random_Boolean_Gen();      
-exports.test = (s) => "testing " + s;
+exports.rand_Bool_Gen = random_Boolean_Gen(); 
+exports.rand_Int = random_Integer;
+//exports.test = (s) => "testing " + s;
 // module.exports overrides previous exports
 //module.exports = (s) => "testing " + s;
