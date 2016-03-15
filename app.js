@@ -62,7 +62,28 @@ var document_Obj = {
   'firstName': "Alex",//first_Name,
   'lastName': "Gluk"//last_Name
 };
-
+var index_Template_Content_List = [
+  '<html>',
+    '<head>',
+      '<title>URL Shortener Microservice</title>',
+      //'<link rel="stylesheet" type="text/css" href="/main.css"/>',
+      '<style>',
+        'body {',
+          'background-color: lightblue;',
+        '}',
+        'p {',
+          'color: green;',
+          'text-align: center;',
+        '}',
+      '</style>',
+    '</head>',
+    '<body>',
+      '<p>I am red!</p>',
+    '</body>',
+  '</html>'
+];
+var index_Template_Content_Str = index_Template_Content_List.join("\n");
+var response_Body; 
 
 if (input_args_list.length >= 3) {
   //first_Name = input_args_list[2].trim();
@@ -295,6 +316,36 @@ var http_Server = http.createServer(
         https://shurli.herokuapp.com/new/?link=http://mongodb.github.io/node-mongodb-native/2.1/api/Collection.html#find
         response: {"error":"No short url found for given input"}
         */
+        /*
+        http.get(options[, callback])#
+        Since most requests are 
+        GET requests 
+        without bodies, 
+        Node.js provides this convenience method. 
+        The only difference 
+        between this method and 
+        http.request() is that 
+        it sets the method to GET and 
+        calls req.end() automatically.
+
+        Example:
+        */
+        http
+          .get(
+            // extracted link (if any) goes here
+            'http://www.google.com/index.html', 
+            (res) => {
+              // 302 Found	The requested page has moved temporarily to a new URL   
+              console.log(`Got response: ${res.statusCode}`);
+              // consume response body
+              res.resume();
+            }
+        ).on(
+            'error', 
+            (e) => {
+              console.log(`Got error: ${e.message}`);
+            }
+        );
         // 'host/' & 'host' both return {path: '/', pathname: '/'} 
         console.log(`request.on "end" url_Obj.path: ${url_Obj.path}`);  
         /*** routing ***/  
@@ -320,7 +371,30 @@ var http_Server = http.createServer(
                   }
               )
           );
-
+        } else if (url_Obj.pathname == end_Points_List[1]) {    
+            /*
+            browser cache may prevent proper routing
+            if it decides that page content is not changing
+            ? use E-Tag ?
+            */
+            console.log('request.on "end" new:', end_Points_List[1]);
+            response_Body = "Try route `/api/whoami`";            
+            response_Body = index_Template_Content_Str
+            //303 See Other	
+            // The requested page can be found under a different URL
+            response
+            .writeHead(
+              200, 
+              {
+                'Content-Length': Buffer.byteLength(response_Body, 'utf8'),
+                // content-type:text/html; charset=UTF-8  
+                'Content-Type': 'text/html'//'text/plain'
+              }
+            );
+            response.write(
+              response_Body,
+              'utf8'
+            );
         } else {
           /* Redirection */ 
           console.log('request.on "end" not "root"');    
