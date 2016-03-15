@@ -2,7 +2,7 @@
 // require('./short_link_generator.js').short_Link_Generator;
 function* random_Boolean_Gen(){
   while(true){  
-      yield Math.random() >= 0.5;
+    yield Math.random() >= 0.5;
   }
 }
 
@@ -36,7 +36,8 @@ function short_Link_Generator(
   // String.fromCharCode(98) == "b"
   var i;
   var result = "";
-  var current_Char;    
+  var current_Char; 
+  var choose_Options_Size = 52;    
       
   // preprocessing / initializing
   if (
@@ -47,8 +48,27 @@ function short_Link_Generator(
     collection_Size = 1;  
   } else {
     // Number("s").toString() == "NaN" 
-    // ceil(x)	Returns x, rounded upwards to the nearest integer  
-    short_Link_Length = Math.ceil(Math.sqrt(collection_Size));  
+    // ceil(x)	Returns x, rounded upwards to the nearest integer 
+    /*
+    from https://www.mathsisfun.com/combinatorics/combinations-permutations-calculator.html
+    How many different Objects are there? (n): 52 == 26 upper + 26 lower
+    How many Objects will you choose? (r): e.g. 2 
+    Is the position of each Object important? true
+    Is there an unlimited supply of each Object? true
+    Permutations: pow(52, 2) = 2704
+    Formula: pow(n, r)
+    
+    to change the base of a logarithm
+    log_a(x) = log_b(x) / log_b(a)
+    so
+    log_10(x) = log_e(x) / log_e(10)
+    or 
+    log_a(x) = ln(x) / ln(a)
+    */
+    // Math.log(x)	Returns the natural logarithm (base E) of x
+    short_Link_Length = Math.ceil(
+      Math.log(collection_Size) / Math.log(choose_Options_Size)
+    );  
   }    
   if (is_Debug_Mode == undefined){
     is_Debug_Mode = process.argv[2] || false; 

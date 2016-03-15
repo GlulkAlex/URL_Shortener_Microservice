@@ -8,6 +8,15 @@ const is_Debug_Mode = (
   //true
   //false
 );
+/*
+? http ?
+for
+https://api-url-shortener-microservice.herokuapp.com/
+*/
+const http = require('http');
+//const fs = require('fs');  
+//const path = require('path');
+const url = require('url');
 const port_Number = (
   //process.argv[3] || 
   process.env.PORT || 
@@ -66,6 +75,7 @@ if (input_args_list.length >= 3) {
 console.log('process.env.MONGO_URI: %j', mongo_URI);
 console.log('process.env.MONGOLAB_URI: %j', mongoLab_URI);
 
+if (false) {
 mongo
 .connect(
   //url, 
@@ -166,4 +176,240 @@ mongo
         
     }
   }
+);
+}
+
+var http_Server = http.createServer(
+  function (
+    request,
+    response
+  ) {  
+    "use strict";
+    // request handling logic... 
+    var collect_result_Str = "";
+    var post_Data;
+    // ** site structure ** //    
+    var end_Points_List = [
+      // `root` for instructions  
+      '/',  
+      // '/new/<valid_URL>'  
+      // '/new/http://freecodecamp.com/news' 
+      // '/new/<invalid_URL>?allow=true'  
+      // for link creation  
+      "/new"
+      // all else redirect to `root`  
+    ];
+    var url_Obj = {};
+    var query_Obj = {};
+    var query_List = [];
+    var source_Link = '';
+    var json_Response_Obj = {}; 
+        
+    request.on(
+      'connect', 
+      (res, socket, head) => {
+        console.log('request.on "connect"');
+      }
+    );
+        
+    request.on(
+      'socket', 
+      (socket) => {
+        console.log('request.on "socket"');
+      }
+    );
+        
+    request.on(
+      'data', 
+      (chunk) => {
+        console.log('request.on "data"');
+        console.log(`request.method: ${request.method}`);
+        console.log(`request.url: ${request.url}`);
+        //console.log('request.on "data" chunk: %j', chunk); 
+        console.log('request.on "data" chunk:', chunk);    
+      }
+    );
+        
+    request.on(
+      'end', 
+      () => {
+        console.log('request.on "end"');
+        if (is_Debug_Mode) {
+          console.log(`request.on "end" request.url: ${request.url}`);
+        }
+        if (request.method == 'GET' ) {
+        } 
+        /*
+        -e, --eval script     evaluate script
+        -p, --print           evaluate script and print result
+        */
+        //node -pe "require('url').parse('/test?q=1', true)" 
+        url_Obj = url.parse(request.url, true);
+        //console.log(`url_Obj.pathname: ${url_Obj.pathname}`);
+        query_List = [];
+        for(var item in url_Obj.query){
+          query_List.push(item);
+          query_List.push(url_Obj.query[item]);
+        } 
+        /*
+        url formal correctness check:
+            Url {
+              protocol: 'htts:',
+              slashes: true,
+              auth: null,
+              host: 'new',
+              port: null,
+              hostname: 'new',
+              hash: null,
+              search: '?allow=true',
+              query: { allow: 'true' },
+              pathname: '/invalid',
+              path: '/invalid?allow=true',
+              href: 'htts://new/invalid?allow=true' }
+        url_Obj.protocol 'http' or 'https' 
+        url_Obj.host is alphaNumeric and 
+          has one or more non consequtive dots '.' within
+        url_Obj.pathname starts with '/new'     
+        url_Obj.query is non empty object   
+        
+        reference test case:
+        https://shurli.herokuapp.com/new/httpp://freecodecamp/.com/news
+        {"error":
+          {"code":"ENOTFOUND",
+          "errno":"ENOTFOUND",
+          "syscall":"getaddrinfo",
+          "hostname":"httpp:",
+          "host":"httpp:",
+          "port":80}}
+        https://shurli.herokuapp.com/new/http://freecodecamp/.com/news  
+        {"error":
+          {"code":"ENOTFOUND",
+           "errno":"ENOTFOUND",
+           "syscall":"getaddrinfo",
+           "hostname":"freecodecamp",
+           "host":"freecodecamp",
+           "port":80}}
+        request:
+        https://shurli.herokuapp.com/4k
+        or
+        https://shurli.herokuapp.com/new/?link=http://mongodb.github.io/node-mongodb-native/2.1/api/Collection.html#find
+        response: {"error":"No short url found for given input"}
+        */
+        // 'host/' & 'host' both return {path: '/', pathname: '/'} 
+        console.log(`request.on "end" url_Obj.path: ${url_Obj.path}`);  
+        /*** routing ***/  
+        if (url_Obj.pathname == end_Points_List[0]) {
+          
+          console.log('request.on "end" root');  
+          json_Response_Obj = {
+            "ipaddress": 'client_IP',
+            "language": 'accepted_Language',
+            "software": 'get_Software( request )'
+          };  
+          response.writeHead(
+            200, 
+            { 'Content-Type': 'application/json' }
+          ); 
+          response
+            .write(
+              JSON
+                .stringify(
+                  //json_Response_Obj  
+                  {
+                    "hour": 25
+                  }
+              )
+          );
+
+        } else {
+          /* Redirection */ 
+          console.log('request.on "end" not "root"');    
+          console.log('request.on "end" -> Redirection');  
+          response
+            .writeHead(
+              //3xx: Redirection
+              //301 Moved Permanently
+              // The requested page has moved to a new URL 
+              301, 
+              {
+                Location: (
+                  (request.socket.encrypted ? 'https://' : 'http://') +
+                  // url_Obj.protocol: null <- screw all
+                  //url_Obj.protocol + '//' +
+                  request.headers.host// + end_Points_List[0]
+                )
+              }
+          );  
+            
+          //response
+          //  .redirect(url_Obj.protocol + '://' + url_Obj.host);    
+        }  
+          
+        /* close `writable` `stream` */
+        response.end();
+      }
+    );
+    
+  }
+);  
+
+http_Server
+  .on(
+    'connection', 
+    (socket) => {
+      console.log('http_Server on "connection" socket: %j', socket);
+    }
+);
+/*
+Emitted each time a client requests a http CONNECT method.
+? like ?
+Client request
+GET /index.html HTTP/1.1
+Host: www.example.com
+POST /test/demo_form.asp HTTP/1.1 
+Host: w3schools.com
+name1=value1&name2=value2
+? or only in the client request header ?
+*/
+http_Server
+  .on(
+    'connect', 
+    (res, socket, head) => {
+      console.log('http_Server on HTTP/1.1 "CONNECT" method socket: %j', socket);
+    }
+);
+
+http_Server
+  .on(
+    'clientError', 
+    (exception, socket) => {   
+      console.log('http_Server on "clientError"');  
+      console.error(`exception.code: ${exception.code}, exception.message: ${exception.message}`);
+    }
+);
+
+http_Server
+  .on(
+    'error', 
+    (e) => {    
+      console.log('http_Server on "error"');  
+      console.error(`e.code: ${e.code}, e.message: ${e.message}`);
+    }
+);
+/*##########################################################################*/
+/* unit test */
+// Start a UNIX socket server 
+// listening for connections on the given path.
+http_Server
+  .listen(
+    port_Number,
+    () => {
+      var address = http_Server.address();
+      var port = http_Server.address().port;
+    
+      console.log(
+        `server listening address{${address.address}}:port{${address.port}}`
+      );
+      //console.log('http_Server listening on port ' + port + '...');
+    }
 );
