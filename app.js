@@ -71,14 +71,74 @@ var index_Template_Content_List = [
         'body {',
           'background-color: lightblue;',
         '}',
+        'h1 {',
+          'text-decoration: underline;',
+        '}',  
+        'h3 {',
+          'border-left-style: solid;',
+          'border-left-color: green;',
+          'border-left-width: thick;',
+        '}',  
         'p {',
           'color: green;',
           'text-align: center;',
         '}',
+        'li p {',
+          'color: blue;',
+          'text-align: left;',
+        '}',
+        'code {',
+          'color: Chocolate;',
+          'background-color: white;',
+        '}',
       '</style>',
     '</head>',
     '<body>',
-      '<p>I am red!</p>',
+      '<h1>API Basejump: URL Shortener Microservice</h1>',
+      '<section>',
+        '<h3>Objective:</h3>',        
+        '<p>Build a full stack JavaScript app<br>', 
+        'that is functionally similar to this:<br>',
+        '<a href="https://shurli.herokuapp.com">reference case</a> and<br>', 
+        'deploy it to Heroku.</p>',
+        '<h3>User story:</h3>',        
+          '<ul>',
+            '<li>',
+              '<p>user can<br>',
+              'pass a <var>URL</var> as a parameter and than<br>',
+              'receive a shortened <var>URL</var> in the <code>JSON</code> response.</p>',
+            '</li>',
+            '<li>',
+              '<p>If user pass an invalid <strong>URL</strong><br>',
+              'that doesn\'t follow the valid <mark><code>http://www.example.com</code></mark> format,<br>',
+              'the <strong>JSON</strong> response will contain<br>',
+              'an <i>error</i> instead.</p>',
+            '</li>',
+            '<li>',
+              '<p>When user visit that shortened URL,<br>',
+              'that will redirect she to the original link</p>',
+            '</li>',
+          '</ul>',    
+      '</section>',  
+      '<section>',  
+        '<h3>Example usage (live demo):</h3>',        
+          '<ul>',
+            '<li>',
+              '<a href="https://api-url-shortener-microservice.herokuapp.com/new/https://github.com/GlulkAlex/URL_Shortener_Microservice">',
+                'https://api-url-shortener-microservice.herokuapp.com/new/&lt;valid URL&gt;</a>', 
+            '</li>',
+            '<li>',
+              '<a href="https://api-url-shortener-microservice.herokuapp.com/new/htps://github./GlulkAlex/URL_Shortener_Microservice?allow=true">',
+                'https://api-url-shortener-microservice.herokuapp.com/new/&lt;<b>invalid</b> URL&gt;?allow=true</a>', 
+            '</li>',
+          '</ul>',    
+        '<h3>Example output:</h3>',        
+          '<ul>',
+            '<li>',
+              '<code>{ "original_url": "http://freecodecamp.com/news", "short_url": "https://shurli.herokuapp.com/QqZ" }</code>', 
+            '</li>',
+          '</ul>',      
+      '</section>',        
     '</body>',
   '</html>'
 ];
@@ -119,32 +179,32 @@ mongo
       querying the collection.
       */
       if (false) {  
-          //var write_Result = 
-          collection
+        //var write_Result = 
+        collection
           .insert(
-            document_Obj,
-            //JSON.stringify(document_Obj),
-            function(
-              err, 
-              //data
-              result//.result.n 
-            ) {
-              if (err) {
-                console.log('(collection / cursor).insert error:', err);
-                //throw err;
-              } else {
-                //console.log(data);
-                //console.log(JSON.stringify(document_Obj));
-                console.log('document_Obj: %j', document_Obj);  
-                if (is_Debug) {
-                  console.log(`result.result.n: ${result.result.n}`);
-                  console.log('result.result: %j', result.result);
-                }
-                /* finaly */
-                db.close();
+          document_Obj,
+          //JSON.stringify(document_Obj),
+          function(
+          err, 
+           //data
+           result//.result.n 
+          ) {
+            if (err) {
+              console.log('(collection / cursor).insert error:', err);
+              //throw err;
+            } else {
+              //console.log(data);
+              //console.log(JSON.stringify(document_Obj));
+              console.log('document_Obj: %j', document_Obj);  
+              if (is_Debug) {
+                console.log(`result.result.n: ${result.result.n}`);
+                console.log('result.result: %j', result.result);
               }
+              /* finaly */
+              db.close();
             }
-          );
+          }
+        );
       }
       
       /*
@@ -190,9 +250,10 @@ mongo
             db.close();
           }
         )
-        .catch(function(e) {
-          console.log(e); 
-        }
+        .catch(
+          function(e) {
+            console.log(e); 
+          }
       );  
         
     }
@@ -225,7 +286,7 @@ var http_Server = http.createServer(
     var query_List = [];
     var source_Link = '';
     var json_Response_Obj = {}; 
-        
+    /*    
     request.on(
       'connect', 
       (res, socket, head) => {
@@ -239,7 +300,9 @@ var http_Server = http.createServer(
         console.log('request.on "socket"');
       }
     );
-        
+    */ 
+    /* .on "data" must be enabled 
+    it seems that it work in pair with .on "end" event */  
     request.on(
       'data', 
       (chunk) => {
@@ -250,10 +313,17 @@ var http_Server = http.createServer(
         console.log('request.on "data" chunk:', chunk);    
       }
     );
-        
+    /**/    
     request.on(
       'end', 
       () => {
+        /*
+        cases:
+        - / | root -> instructions
+        - /new<link>[options] -> short_Link | error
+        - /<short_Link> -> redirect | error
+        - /<path>/[whatever] -> redirect to / | root
+        */
         console.log('request.on "end"');
         if (is_Debug_Mode) {
           console.log(`request.on "end" request.url: ${request.url}`);
@@ -330,22 +400,24 @@ var http_Server = http.createServer(
 
         Example:
         */
-        http
-          .get(
-            // extracted link (if any) goes here
-            'http://www.google.com/index.html', 
-            (res) => {
-              // 302 Found	The requested page has moved temporarily to a new URL   
-              console.log(`Got response: ${res.statusCode}`);
-              // consume response body
-              res.resume();
-            }
-        ).on(
-            'error', 
-            (e) => {
-              console.log(`Got error: ${e.message}`);
-            }
-        );
+        if (false) {
+          http
+            .get(
+              // extracted link (if any) goes here
+              'http://www.google.com/index.html', 
+              (res) => {
+                // 302 Found	The requested page has moved temporarily to a new URL   
+                console.log(`Got response: ${res.statusCode}`);
+                // consume response body
+                res.resume();
+              }
+          ).on(
+              'error', 
+              (e) => {
+                console.log(`Got error: ${e.message}`);
+              }
+          );
+        }  
         // 'host/' & 'host' both return {path: '/', pathname: '/'} 
         console.log(`request.on "end" url_Obj.path: ${url_Obj.path}`);  
         /*** routing ***/  
@@ -371,7 +443,10 @@ var http_Server = http.createServer(
                   }
               )
           );
-        } else if (url_Obj.pathname == end_Points_List[1]) {    
+        } else if (
+          url_Obj.path == end_Points_List[1] ||
+          url_Obj.pathname == end_Points_List[1]
+        ) {    
             /*
             browser cache may prevent proper routing
             if it decides that page content is not changing
@@ -431,7 +506,10 @@ http_Server
   .on(
     'connection', 
     (socket) => {
-      console.log('http_Server on "connection" socket: %j', socket);
+      //socket.localAddress
+      //socket.localPort
+      //console.log('http_Server on "connection" socket: %j', socket);
+      console.log(`http_Server on "connection" socket: ${socket.localAddress}:${socket.localPort}`);
     }
 );
 /*
@@ -445,6 +523,7 @@ Host: w3schools.com
 name1=value1&name2=value2
 ? or only in the client request header ?
 */
+/*
 http_Server
   .on(
     'connect', 
@@ -452,7 +531,7 @@ http_Server
       console.log('http_Server on HTTP/1.1 "CONNECT" method socket: %j', socket);
     }
 );
-
+*/
 http_Server
   .on(
     'clientError', 
