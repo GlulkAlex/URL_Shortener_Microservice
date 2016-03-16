@@ -144,6 +144,7 @@ var index_Template_Content_List = [
 ];
 var index_Template_Content_Str = index_Template_Content_List.join("\n");
 var response_Body; 
+var source_Link = "";
 
 if (input_args_list.length >= 3) {
   //first_Name = input_args_list[2].trim();
@@ -325,7 +326,10 @@ var http_Server = http.createServer(
         - /<path>/[whatever] -> redirect to / | root
         */
         console.log('request.on "end"');
-        if (is_Debug_Mode) {
+        if (
+          true
+          //is_Debug_Mode
+        ) {
           console.log(`request.on "end" request.url: ${request.url}`);
         }
         if (request.method == 'GET' ) {
@@ -342,6 +346,8 @@ var http_Server = http.createServer(
           query_List.push(item);
           query_List.push(url_Obj.query[item]);
         } 
+        console.log('request.on "end" query_List\n%j:', query_List);
+        console.log('request.on "end" url_Obj\n%j:', url_Obj);
         /*
         url formal correctness check:
             Url {
@@ -400,28 +406,14 @@ var http_Server = http.createServer(
 
         Example:
         */
-        if (false) {
-          http
-            .get(
-              // extracted link (if any) goes here
-              'http://www.google.com/index.html', 
-              (res) => {
-                // 302 Found	The requested page has moved temporarily to a new URL   
-                console.log(`Got response: ${res.statusCode}`);
-                // consume response body
-                res.resume();
-              }
-          ).on(
-              'error', 
-              (e) => {
-                console.log(`Got error: ${e.message}`);
-              }
-          );
+        if (false) {          
         }  
         // 'host/' & 'host' both return {path: '/', pathname: '/'} 
         console.log(`request.on "end" url_Obj.path: ${url_Obj.path}`);  
         /*** routing ***/  
-        if (url_Obj.pathname == end_Points_List[0]) {
+        if (
+          url_Obj.pathname == end_Points_List[0]
+        ) {
           
           console.log('request.on "end" root');  
           json_Response_Obj = {
@@ -470,6 +462,165 @@ var http_Server = http.createServer(
               response_Body,
               'utf8'
             );
+        } else if (
+          //"/new"
+          url_Obj.path.slice(0, 4) == end_Points_List[1]
+        ) {
+          source_Link = url_Obj.path.slice(5);
+          console.log('request.on "end" source_Link:', source_Link);
+          if (source_Link.length > 0) {
+            console.log('request.on "end" something after "new" in:', url_Obj.path);
+            url_Obj = url.parse(source_Link, true);
+            //console.log(`url_Obj.pathname: ${url_Obj.pathname}`);
+            query_List = [];
+            for(var item in url_Obj.query){
+              query_List.push(item);
+              query_List.push(url_Obj.query[item]);
+            } 
+            console.log('request.on "end" source_Link query_List\n%j:', query_List);
+            console.log('request.on "end" source_Link url_Obj\n%j:', url_Obj);
+            // hyphens (-), underscores (_)
+            /*
+            cases:
+            - check "protocol": http | https
+            - check "host": /(([A-z0-9-_])+\.([A-z0-9-_])+)+/ig
+              /^([^\W\s]+)((\.)([^\W\s]+))*((\.)([^\W\s]+))$/g.exec("1freecode.25.ca.h");
+            - check http.get result / status code
+              OK ?
+              1xx: Information
+                100 Continue
+              2xx: Successful
+                200 OK
+              3xx: Redirection
+                303 See Other
+              not OK
+              4xx: Client Error
+                400 Bad Request
+                404 Not Found
+              5xx: Server Error 
+                505 HTTP Version Not Supported
+            */
+            console.log(`Checking url_Obj.protocol: ${url_Obj.protocol}`);
+            if (
+              url_Obj.protocol == "http:" || 
+              url_Obj.protocol == "https:"
+            ) {
+              console.log(`Checking url_Obj.host: ${url_Obj.host}`);
+              if (
+                /^([^\W\s]+)((\.)([^\W\s]+))*((\.)([^\W\s]+))$/g.test(url_Obj.host) 
+              ) {
+                console.log(`Checking link: ${source_Link} in www`);
+                //Error: Protocol "https:" not supported. Expected "http:"
+                http
+                  .get(
+                    // extracted link (if any) goes here
+                    //'http://www.google.com/index.html', 
+                    source_Link,
+                    (res) => {
+                      // 302 Found	The requested page has moved temporarily to a new URL   
+                      console.log(`Got response: ${res.statusCode}`);
+                      /* async so parent process must await for result */
+                      json_Response_Obj = {
+                        "get_Response": res.statusCode,
+                        "source_Link": source_Link
+                      };  
+                      console.log('request.on "end" http.get json_Response_Obj: %j', json_Response_Obj);
+                      response.writeHead(
+                        200, 
+                        { 'Content-Type': 'application/json' }
+                      ); 
+                      response
+                        .end(
+                          JSON
+                            .stringify(
+                              json_Response_Obj  
+                          )
+                      ); 
+                      console.log('request.on "end" http.get response.end()');
+                      // consume response body
+                      res.resume();
+                    }
+                ).on(
+                    'error', 
+                    (e) => {
+                      console.log(`Got error: ${e.message}`);
+                      json_Response_Obj = {
+                        "error": e.message
+                      };
+                      response.writeHead(
+                        200, 
+                        { 'Content-Type': 'application/json' }
+                      ); 
+                      response
+                        .write(
+                          JSON
+                            .stringify(
+                              json_Response_Obj  
+                          )
+                      );
+                      response.end();
+                      console.log('request.on "end" error response.end()');
+                      
+                    }
+                );
+              } else {
+                json_Response_Obj = {
+                  "error": "bad URL host"
+                };
+                response.writeHead(
+                  200, 
+                  { 'Content-Type': 'application/json' }
+                ); 
+                response
+                  .write(
+                    JSON
+                      .stringify(
+                        json_Response_Obj  
+                    )
+                );
+                response.end();
+                console.log('request.on "end" error response.end()');
+
+              }
+            } else {
+              json_Response_Obj = {
+                "error": "bad URL protocol"
+              };
+              
+              response.writeHead(
+                200, 
+                { 'Content-Type': 'application/json' }
+              ); 
+              response
+                .write(
+                  JSON
+                    .stringify(
+                      json_Response_Obj  
+                  )
+              );
+              response.end();
+              console.log('request.on "end" error response.end()');
+            }
+            
+          } else {
+            console.log('request.on "end" nothing after "new" in:', url_Obj.path);
+            json_Response_Obj = {
+              "error": 'Nothing after "new" found in URL. Link expected.'
+            };  
+            response.writeHead(
+              200, 
+              { 'Content-Type': 'application/json' }
+            ); 
+            response
+              .write(
+                JSON
+                  .stringify(
+                    json_Response_Obj  
+                )
+            );
+            response.end();
+            console.log('request.on "end" error response.end()');
+          }
         } else {
           /* Redirection */ 
           console.log('request.on "end" not "root"');    
@@ -491,11 +642,14 @@ var http_Server = http.createServer(
           );  
             
           //response
-          //  .redirect(url_Obj.protocol + '://' + url_Obj.host);    
+          //  .redirect(url_Obj.protocol + '://' + url_Obj.host);  
+          response.end();
+          console.log('request.on "end" Redirection response.end()');
         }  
           
         /* close `writable` `stream` */
-        response.end();
+        //response.end();
+        //console.log('request.on "end" response.end()');
       }
     );
     
