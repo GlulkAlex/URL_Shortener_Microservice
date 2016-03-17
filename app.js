@@ -14,6 +14,7 @@ for
 https://api-url-shortener-microservice.herokuapp.com/
 */
 const http = require('http');
+const https = require('https');
 //const fs = require('fs');  
 //const path = require('path');
 const url = require('url');
@@ -143,6 +144,7 @@ var index_Template_Content_List = [
   '</html>'
 ];
 var index_Template_Content_Str = index_Template_Content_List.join("\n");
+var getter = https;
 var response_Body; 
 var source_Link = "";
 
@@ -302,8 +304,10 @@ var http_Server = http.createServer(
       }
     );
     */ 
+    // ? consume request body ?
+    request.resume();  
     /* .on "data" must be enabled 
-    it seems that it work in pair with .on "end" event */  
+    it seems that it work in pair with .on "end" event   
     request.on(
       'data', 
       (chunk) => {
@@ -314,7 +318,7 @@ var http_Server = http.createServer(
         console.log('request.on "data" chunk:', chunk);    
       }
     );
-    /**/    
+    */    
     request.on(
       'end', 
       () => {
@@ -322,7 +326,7 @@ var http_Server = http.createServer(
         cases:
         - / | root -> instructions
         - /new<link>[options] -> short_Link | error
-        - /<short_Link> -> redirect | error
+        - /<short_Link> -> redirect to <original_link> | error
         - /<path>/[whatever] -> redirect to / | root
         */
         console.log('request.on "end"');
@@ -331,6 +335,48 @@ var http_Server = http.createServer(
           //is_Debug_Mode
         ) {
           console.log(`request.on "end" request.url: ${request.url}`);
+          //request.headers.referer: http://localhost:8080/new/https://devcenter.heroku.com/articles/getting-started-with-nodejs
+          // all hash part #push-local-changes is lost
+          // it seems like hash part is (for) client / front-end only
+          /*
+          so, does this really matter ?
+          */
+          console.log(`request.on "end" request.headers.referer: ${request.headers.referer}`);
+          // from http://expressjs.com/en/api.html#req
+          /*
+          console.log(`request.on "end" request.baseUrl: ${request.baseUrl}`);
+          console.log(`request.on "end" request.hostname: ${request.hostname}`);
+          console.log(`request.on "end" request.ip: ${request.ip}`);
+          console.log(`request.on "end" request.originalUrl: ${request.originalUrl}`);
+          console.log(`request.on "end" request.path: ${request.path}`);
+          console.log(`request.on "end" request.protocol: ${request.protocol}`);
+          console.log(`request.on "end" request.query: ${request.query}`);
+          */
+          /*
+          var prop_Count = 0;
+          var prop;
+          var prop_Indx;
+          for (
+            //var prop of src
+            //prop_Indx in request
+            prop_Indx in request.headers
+          ) {
+            if (prop_Count > 50) { 
+              break;
+            } else {
+              prop = (
+                //request[prop_Indx]
+                request.headers[prop_Indx]
+              );
+              if (typeof(prop) == "function") {
+                console.log(`request[${prop_Indx}]: function`);
+              } else {  
+                console.log(`request[${prop_Indx}]: ${prop}`);
+              }
+            }
+            prop_Count += 1;
+          }
+          */
         }
         if (request.method == 'GET' ) {
         } 
@@ -511,7 +557,9 @@ var http_Server = http.createServer(
               ) {
                 console.log(`Checking link: ${source_Link} in www`);
                 //Error: Protocol "https:" not supported. Expected "http:"
-                http
+                //http
+                getter = url_Obj.protocol == "http:" ? http : https;
+                getter
                   .get(
                     // extracted link (if any) goes here
                     //'http://www.google.com/index.html', 
@@ -519,15 +567,37 @@ var http_Server = http.createServer(
                     (res) => {
                       // 302 Found	The requested page has moved temporarily to a new URL   
                       console.log(`Got response: ${res.statusCode}`);
+                      /*
+                      // to consume response body
+                      // or use 'res.resume()';
+                      res.on('data', (d) => {
+                        // page content goes here
+                        process.stdout.write(d);
+                      });
+                      */
                       /* async so parent process must await for result */
                       json_Response_Obj = {
                         "get_Response": res.statusCode,
                         "source_Link": source_Link
                       };  
                       console.log('request.on "end" http.get json_Response_Obj: %j', json_Response_Obj);
-                      response.writeHead(
-                        200, 
-                        { 'Content-Type': 'application/json' }
+                      
+                      /*
+                      readable.pipe(destination[, options])
+                        destination <stream.Writable> The destination for writing data
+                        options <Object> Pipe options
+                          end <Boolean> End the writer when the reader ends. Default = true
+                      */
+                      //reader
+                      res
+                        .pipe(/*writer*/response);
+                      //res
+                      //  .unpipe(/*writer*/response);
+                      /*
+                      response
+                        .writeHead(
+                          200, 
+                          { 'Content-Type': 'application/json' }
                       ); 
                       response
                         .end(
@@ -537,6 +607,26 @@ var http_Server = http.createServer(
                           )
                       ); 
                       console.log('request.on "end" http.get response.end()');
+                      */
+                      // readable.on('readable', () => {});
+                      /*
+                      if you add a 'response' event handler, then 
+                      you must `consume` the 'data' 
+                      from the `response` object, 
+                      either 
+                      by calling 'response.read()' 
+                      whenever there is a 'readable' `event`, or 
+                      by adding a 'data' `handler`, or 
+                      by calling the '.resume()' method. 
+                      Until the 'data' is `consumed`, 
+                      the 'end' `event` will not `fire`. 
+                      Also, 
+                      until the 'data' is `read` 
+                      it will `consume` 'memory' 
+                      that can 
+                      eventually lead to 
+                      a 'process out of memory' error.
+                      */
                       // consume response body
                       res.resume();
                     }
@@ -623,36 +713,149 @@ var http_Server = http.createServer(
           }
         } else {
           /* Redirection */ 
+          /*
+          cases:
+          - /<short_Link> -> redirect to <original_link> | error
+          - /<path>/[whatever] -> redirect to / | root
+          */
           console.log('request.on "end" not "root"');    
-          console.log('request.on "end" -> Redirection');  
-          response
-            .writeHead(
-              //3xx: Redirection
-              //301 Moved Permanently
-              // The requested page has moved to a new URL 
-              301, 
-              {
-                Location: (
-                  (request.socket.encrypted ? 'https://' : 'http://') +
-                  // url_Obj.protocol: null <- screw all
-                  //url_Obj.protocol + '//' +
-                  request.headers.host// + end_Points_List[0]
+          console.log('request.on "end" -> Redirection');
+          // "net/.html".indexOf("\/") != -1
+          if (
+            //url_Obj.path.indexOf("\/") == -1
+            // /^[A-z]+$/g.exec("netHtml");
+            /^[A-z]+$/g.test(url_Obj.path.slice(1))
+          ) {
+            // search for entry in db
+            console.log('request.on "end" "path" matches expected "short_Link" format'); 
+            console.log('searching for original link in db ...'); 
+            json_Response_Obj = {
+              "result": 'searching for original link in db ...'
+            };  
+            response.writeHead(
+              200, 
+              { 'Content-Type': 'application/json' }
+            ); 
+            response
+              .write(
+                JSON
+                  .stringify(
+                    json_Response_Obj  
                 )
-              }
-          );  
+            );
+          } else {
+            console.log('request.on "end" path not match expected "short_Link" format'); 
+            console.log('request.on "end" Redirection to request.headers.host: ', request.headers.host);
+            console.log(url_Obj.protocol + '://' + url_Obj.host);
+            
+            response
+              .writeHead(
+                //3xx: Redirection
+                //301 Moved Permanently
+                // The requested page has moved to a new URL 
+                301, 
+                {
+                  Location: (
+                    (request.socket.encrypted ? 'https://' : 'http://') +
+                    // url_Obj.protocol: null <- screw all
+                    //url_Obj.protocol + '//' +
+                    request.headers.host// + end_Points_List[0]
+                  )
+                }
+            );
+          } 
             
           //response
           //  .redirect(url_Obj.protocol + '://' + url_Obj.host);  
           response.end();
           console.log('request.on "end" Redirection response.end()');
         }  
-          
+                
         /* close `writable` `stream` */
         //response.end();
         //console.log('request.on "end" response.end()');
       }
     );
     
+    // using `stream` API
+    //var writer = getWritableStreamSomehow();
+    //var reader = getReadableStreamSomehow();
+
+    //writer
+    response
+      .on(
+        'pipe', 
+        (src) => {
+          console.error('something is piping into the writer');
+          //assert.equal(src, reader);
+          /*
+          var prop_Count = 0;
+          var prop;
+          var prop_Indx;
+          for (
+            //var prop of src
+            prop_Indx in src
+          ) {
+            if (prop_Count > 50) { 
+              break;
+            } else {
+              prop = src[prop_Indx];
+              if (typeof(prop) == "function") {
+                console.log(`src[${prop_Indx}]: function`);
+              } else {  
+                console.log(`src[${prop_Indx}]: ${prop}`);
+              }
+            }
+            prop_Count += 1;
+          }
+          */
+          json_Response_Obj = {
+            "get_Response": src.statusCode,
+            /* not so much functional 
+            source_Link is not a parameter
+            but global state
+            */
+            "source_Link": source_Link
+          }; 
+          console.log('response.on "pipe" src json_Response_Obj: %j', json_Response_Obj);
+          response
+            .writeHead(
+              200, 
+              { 'Content-Type': 'application/json' }
+          ); 
+          response
+            .end(
+              //TypeError: Converting circular structure to JSON
+              JSON
+              .stringify(                
+                json_Response_Obj  
+              )
+          );
+          /* close `writable` `stream` */
+          //response.end();
+          console.log('response.on "pipe" response.end()');
+          src.unpipe(response);
+        }
+    );
+    //reader.pipe(writer);
+    //reader.unpipe(writer);  
+    response
+      .on(
+        'unpipe', 
+        (src) => {
+          console.error('something has stopped piping into the writer');
+        }
+    );
+      
+    response
+      .on(
+        'error', 
+        (e) => {    
+          console.log('response on "error"');  
+          console.error(`e.code: ${e.code}, e.message: ${e.message}`);
+        }
+    );
+      
   }
 );  
 
