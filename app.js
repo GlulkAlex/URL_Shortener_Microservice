@@ -47,14 +47,16 @@ const mongoLab_URI = (
 if (is_Debug_Mode){
   console.log('process.env: %j', process.env);
 }
+// for correct connection using .env 
+// use `heroku local` or `heroku open [<url.path>]`
 const mongo = require('mongodb').MongoClient;
 if (is_Debug_Mode){
   console.log('mongo: %j', mongo);
 }
 const assert = require('assert');
 const collection_Name = (
-  "docs"
-  //"links"  
+  //"docs" // <- for tests only
+  "links"  
 );
 // exports.get_Short_Link = short_Link_Generator;
 const short_Link_Gen = require('./short_link_generator.js');//.short_Link_Generator;
@@ -541,42 +543,274 @@ var http_Server = http.createServer(
                   1.2.2 store pair / tuple {`source_Link`, `short_Link`}
                   1.2.3 return generated & stored `short_Link`
               */
-              //exports.get_Short_Link = short_Link_Generator;              
-              json_Response_Obj = { 
-                // ? mast contain query without allow ?
-                /*
-                {"protocol":"http:",                
-                "slashes":true,"auth":null,
-                "host":"freecodecamp.com","port":null,
-                "hostname":"freecodecamp.com","hash":null,
-                "search":"?allow=true","query":{"allow":"true"},
-                "pathname":"/news/",
-                "path":"/news/?allow=true",
-                "href":"http://freecodecamp.com/news/?allow=true"}
-                */
-                "original_url": url_Obj.protocol + "//" + url_Obj.host + url_Obj.pathname, //source_Link, 
-                "short_url": (request.socket.encrypted ? 'https://' : 'http://') +
-                request.headers.host + "/" + 
-                short_Link_Gen
-                  .get_Short_Link(
-                    collection_Size,
-                    source_Link
-                ) 
-              }
+              // for correct .env use `heroku local`
+              mongo
+                .connect(
+                  //url, 
+                  mongoLab_URI,  
+                  function(
+                      err, 
+                      db
+                  ) {
+                    // db gives access to the database
+                    if (err) {
+                      console.log('mongo.connect error:', err);
+                      //throw err;
+                    } else {
+                      const collection = db.collection(collection_Name);
 
-              response.writeHead(
-                200, 
-                { 'Content-Type': 'application/json' }
-              ); 
-              response
-                .write(
-                JSON
-                .stringify(
-                  json_Response_Obj  
-                )
+                      /*
+                      new Promise(executor);
+                      new Promise(function(resolve, reject) { ... });
+                      */
+                      // count(query, options, callback) => Promise  
+                      collection
+                        .count({})
+                        .then(
+                          (count) => {
+                            ////assert.equal(err, null);  
+                            //assert.equal(1, count);
+                            console.log(`collection ${collection_Name} consist of / contains: ${count} documents`);
+                            
+                            if (count > 0) {
+                              // has content / items for search
+                              collection
+                                .find(
+                                  {
+                                    //"short_url":"Alex"
+                                    "original_url": source_Link
+                                  }
+                                 )
+                                .project({"_id": false, "original_url": true, "short_url": 1})
+                                .toArray()
+                                .then(
+                                  (docs) => {
+                                    ////assert.equal(err, null);  
+                                    //assert.equal(1 || 0, docs.length);
+                                    //console.log(`collection_Name content: ${docs}`);
+                                    console.log(`collection ${collection_Name} content.length: ${docs.length}`);  
+                                    //console.log("collection_Name content:\n%j", docs); 
+                                    
+                                    if (docs.length > 0) {
+                                      // found
+                                      json_Response_Obj = { 
+                                        //[TypeError: Cannot read property 'original_url' of undefined]
+                                        "original_url": docs[0].original_url, //source_Link, 
+                                        "short_url": docs[0].short_url,
+                                        "message": "stored link retrieved"
+                                      };
+                                    } else {
+                                      // not found => new
+                                      // must be unique within `link` collection
+                                      short_Link = short_Link_Gen
+                                        .get_Short_Link(
+                                          collection_Size,
+                                          source_Link
+                                      );
+                                      json_Response_Obj = { 
+                                        // ? mast contain query without allow ?
+                                        /*
+                                        {"protocol":"http:",                
+                                        "slashes":true,"auth":null,
+                                        "host":"freecodecamp.com","port":null,
+                                        "hostname":"freecodecamp.com","hash":null,
+                                        "search":"?allow=true","query":{"allow":"true"},
+                                        "pathname":"/news/",
+                                        "path":"/news/?allow=true",
+                                        "href":"http://freecodecamp.com/news/?allow=true"}
+                                        */
+                                        "original_url": (url_Obj.protocol + "//" + 
+                                                         url_Obj.host + url_Obj.pathname), //source_Link, 
+                                        "short_url": (request.socket.encrypted ? 'https://' : 'http://') +
+                                        request.headers.host + "/" + 
+                                        // may create duplicates
+                                        // additional check needed
+                                        short_Link,
+                                        "message": "new link stored"
+                                      }
+                                    };
+                                    document_Obj = {
+                                      "original_url": json_Response_Obj.original_url,
+                                      "short_url": short_Link
+                                    };
+                                    
+                                    // not DRY
+                                    // to many copy->paste
+                                    collection
+                                      .insert(
+                                        document_Obj,
+                                        //JSON.stringify(document_Obj),
+                                        //json_Response_Obj,
+                                        (
+                                          err, 
+                                          result//.result.n 
+                                        ) => {
+                                          if (err) {
+                                            console.log('(collection / cursor).insert error:', err);
+                                            //throw err;
+                                            json_Response_Obj = {
+                                              "error": err.message
+                                            };
+                                            response
+                                              .writeHead(
+                                                200, 
+                                                { 'Content-Type': 'application/json' }
+                                            ); 
+                                            response
+                                              .write(
+                                              JSON
+                                              .stringify(
+                                                json_Response_Obj  
+                                              )
+                                            );
+                                            response.end();
+                                            console
+                                              .log('request.on "end" query.allow response.end()');  
+
+                                          } else {
+                                            //console.log(data);
+                                            //console.log(JSON.stringify(document_Obj));
+                                            console.log('inserted document_Obj: %j', document_Obj);  
+                                            if (is_Debug) {
+                                              console.log(`result.result.n: ${result.result.n}`);
+                                              console.log('result.result: %j', result.result);
+                                            }
+                                            response
+                                              .writeHead(
+                                                200, 
+                                                { 'Content-Type': 'application/json' }
+                                            ); 
+                                            response
+                                              .write(
+                                              JSON
+                                              .stringify(
+                                                json_Response_Obj  
+                                              )
+                                            );
+                                            response.end();
+                                            console
+                                              .log('request.on "end" query.allow response.end()');  
+
+                                            /* finaly */
+                                            db.close();
+                                          }
+                                        }
+                                    );
+
+                                    //db.close();
+                                  }
+                                )
+                                .catch(
+                                  (e) => {
+                                    console.log(e); 
+                                  }
+                              );
+                            } else {  
+                              // has no previously stored link
+                              //exports.get_Short_Link = short_Link_Generator; 
+                              short_Link = short_Link_Gen
+                                .get_Short_Link(
+                                  collection_Size,
+                                  source_Link
+                              );
+                              json_Response_Obj = { 
+                                // ? mast contain query without allow ?
+                                /*
+                                {"protocol":"http:",                
+                                "slashes":true,"auth":null,
+                                "host":"freecodecamp.com","port":null,
+                                "hostname":"freecodecamp.com","hash":null,
+                                "search":"?allow=true","query":{"allow":"true"},
+                                "pathname":"/news/",
+                                "path":"/news/?allow=true",
+                                "href":"http://freecodecamp.com/news/?allow=true"}
+                                */
+                                "original_url": (url_Obj.protocol + "//" + 
+                                                 url_Obj.host + url_Obj.pathname), //source_Link, 
+                                "short_url": (request.socket.encrypted ? 'https://' : 'http://') +
+                                request.headers.host + "/" + 
+                                short_Link,
+                                "message": "new link stored"
+                              };
+                              document_Obj = {
+                                "original_url": json_Response_Obj.original_url,
+                                "short_url": short_Link
+                              };
+                              
+                              collection
+                                .insert(
+                                  //document_Obj,
+                                  //JSON.stringify(document_Obj),
+                                  json_Response_Obj,
+                                  (
+                                    err, 
+                                    result//.result.n 
+                                  ) => {
+                                    if (err) {
+                                      console.log('(collection / cursor).insert error:', err);
+                                      //throw err;
+                                      json_Response_Obj = {
+                                        "error": err.message
+                                      };
+                                      response
+                                        .writeHead(
+                                          200, 
+                                          { 'Content-Type': 'application/json' }
+                                      ); 
+                                      response
+                                        .write(
+                                        JSON
+                                        .stringify(
+                                          json_Response_Obj  
+                                        )
+                                      );
+                                      response.end();
+                                      console
+                                        .log('request.on "end" query.allow response.end()');  
+                                      
+                                    } else {
+                                      //console.log(data);
+                                      //console.log(JSON.stringify(document_Obj));
+                                      console.log('inserted document_Obj: %j', json_Response_Obj);  
+                                      if (is_Debug) {
+                                        console.log(`result.result.n: ${result.result.n}`);
+                                        console.log('result.result: %j', result.result);
+                                      }
+                                      response
+                                        .writeHead(
+                                          200, 
+                                          { 'Content-Type': 'application/json' }
+                                      ); 
+                                      response
+                                        .write(
+                                        JSON
+                                        .stringify(
+                                          json_Response_Obj  
+                                        )
+                                      );
+                                      response.end();
+                                      console
+                                        .log('request.on "end" query.allow response.end()');  
+
+                                      /* finaly */
+                                      db.close();
+                                    }
+                                  }
+                              );
+                                                            
+                              //db.close();
+                            }
+                          }
+                        )
+                        .catch((e) => {
+                          console.log(e); 
+                        }
+                      );                        
+
+                    }
+                  }
               );
-              response.end();
-              console.log('request.on "end" query.allow response.end()');
+              
             } else {
               // hyphens (-), underscores (_)
               /*
