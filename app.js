@@ -1,3 +1,4 @@
+"use strict";
 /*
 .env
 MONGO_URI=mongodb://localhost:27017/clementinejs
@@ -55,6 +56,16 @@ const collection_Name = (
   "docs"
   //"links"  
 );
+// exports.get_Short_Link = short_Link_Generator;
+const short_Link_Gen = require('./short_link_generator.js');//.short_Link_Generator;
+// redundat here, has no practical use
+const end_Points_List = [
+  "/",
+  "/new"//, // special entry point
+  //"/home",
+  //"/help",
+  //"/info"
+];
 
 var input_args_list = process.argv;
 var node_ = input_args_list[0];
@@ -63,6 +74,7 @@ var document_Obj = {
   'firstName': "Alex",//first_Name,
   'lastName': "Gluk"//last_Name
 };
+// instead fetch template
 var index_Template_Content_List = [
   '<html>',
     '<head>',
@@ -287,8 +299,11 @@ var http_Server = http.createServer(
     var url_Obj = {};
     var query_Obj = {};
     var query_List = [];
+    var query_Allow_Prop = false;  
     var source_Link = '';
     var json_Response_Obj = {}; 
+    // links  
+    var collection_Size = 0;  
     /*    
     request.on(
       'connect', 
@@ -386,6 +401,7 @@ var http_Server = http.createServer(
         */
         //node -pe "require('url').parse('/test?q=1', true)" 
         url_Obj = url.parse(request.url, true);
+        query_Allow_Prop = url_Obj.query.allow;
         //console.log(`url_Obj.pathname: ${url_Obj.pathname}`);
         query_List = [];
         for(var item in url_Obj.query){
@@ -393,6 +409,7 @@ var http_Server = http.createServer(
           query_List.push(url_Obj.query[item]);
         } 
         console.log('request.on "end" query_List\n%j:', query_List);
+        console.log('request.on "end" query_Allow_Prop:', query_Allow_Prop);
         console.log('request.on "end" url_Obj\n%j:', url_Obj);
         /*
         url formal correctness check:
@@ -458,32 +475,10 @@ var http_Server = http.createServer(
         console.log(`request.on "end" url_Obj.path: ${url_Obj.path}`);  
         /*** routing ***/  
         if (
-          url_Obj.pathname == end_Points_List[0]
-        ) {
-          
-          console.log('request.on "end" root');  
-          json_Response_Obj = {
-            "ipaddress": 'client_IP',
-            "language": 'accepted_Language',
-            "software": 'get_Software( request )'
-          };  
-          response.writeHead(
-            200, 
-            { 'Content-Type': 'application/json' }
-          ); 
-          response
-            .write(
-              JSON
-                .stringify(
-                  //json_Response_Obj  
-                  {
-                    "hour": 25
-                  }
-              )
-          );
-        } else if (
-          url_Obj.path == end_Points_List[1] ||
-          url_Obj.pathname == end_Points_List[1]
+          url_Obj.path == end_Points_List[0] //||
+          //url_Obj.path == end_Points_List[2] ||
+          //url_Obj.path == end_Points_List[3] ||
+          //url_Obj.path == end_Points_List[4]
         ) {    
             /*
             browser cache may prevent proper routing
@@ -509,154 +504,236 @@ var http_Server = http.createServer(
               'utf8'
             );
         } else if (
-          //"/new"
-          url_Obj.path.slice(0, 4) == end_Points_List[1]
+          // cheking match for "/new/" (not just "/new")
+          url_Obj.path.slice(0, 5) == "/new/" &&//end_Points_List[1] + "/" 
+          url_Obj.path.length > "/new/".length
         ) {
+          
           source_Link = url_Obj.path.slice(5);
           console.log('request.on "end" source_Link:', source_Link);
-          if (source_Link.length > 0) {
-            console.log('request.on "end" something after "new" in:', url_Obj.path);
+          if (
+            true
+            //source_Link.length > 0
+          ) {
+            console.log('request.on "end" something after "new/" in:', url_Obj.path);
             url_Obj = url.parse(source_Link, true);
             //console.log(`url_Obj.pathname: ${url_Obj.pathname}`);
+            /*
             query_List = [];
             for(var item in url_Obj.query){
               query_List.push(item);
               query_List.push(url_Obj.query[item]);
             } 
             console.log('request.on "end" source_Link query_List\n%j:', query_List);
-            console.log('request.on "end" source_Link url_Obj\n%j:', url_Obj);
-            // hyphens (-), underscores (_)
-            /*
-            cases:
-            - check "protocol": http | https
-            - check "host": /(([A-z0-9-_])+\.([A-z0-9-_])+)+/ig
-              /^([^\W\s]+)((\.)([^\W\s]+))*((\.)([^\W\s]+))$/g.exec("1freecode.25.ca.h");
-            - check http.get result / status code
-              OK ?
-              1xx: Information
-                100 Continue
-              2xx: Successful
-                200 OK
-              3xx: Redirection
-                303 See Other
-              not OK
-              4xx: Client Error
-                400 Bad Request
-                404 Not Found
-              5xx: Server Error 
-                505 HTTP Version Not Supported
             */
-            console.log(`Checking url_Obj.protocol: ${url_Obj.protocol}`);
+            console.log('request.on "end" source_Link url_Obj\n%j:', url_Obj);
+            // `allow`
             if (
-              url_Obj.protocol == "http:" || 
-              url_Obj.protocol == "https:"
+              //query_List.length > 0 &&
+              //url_Obj.query.allow
+              query_Allow_Prop
             ) {
-              console.log(`Checking url_Obj.host: ${url_Obj.host}`);
+              /*
+              1. check Mongo if `source_Link` exist already
+                1.1 if true -> return stored `short_Link`
+                1.2 else -> return `collection_Size`
+                  1.2.1 generate `short_Link`
+                  1.2.2 store pair / tuple {`source_Link`, `short_Link`}
+                  1.2.3 return generated & stored `short_Link`
+              */
+              //exports.get_Short_Link = short_Link_Generator;              
+              json_Response_Obj = { 
+                // ? mast contain query without allow ?
+                /*
+                {"protocol":"http:",                
+                "slashes":true,"auth":null,
+                "host":"freecodecamp.com","port":null,
+                "hostname":"freecodecamp.com","hash":null,
+                "search":"?allow=true","query":{"allow":"true"},
+                "pathname":"/news/",
+                "path":"/news/?allow=true",
+                "href":"http://freecodecamp.com/news/?allow=true"}
+                */
+                "original_url": url_Obj.protocol + "//" + url_Obj.host + url_Obj.pathname, //source_Link, 
+                "short_url": (request.socket.encrypted ? 'https://' : 'http://') +
+                request.headers.host + "/" + 
+                short_Link_Gen
+                  .get_Short_Link(
+                    collection_Size,
+                    source_Link
+                ) 
+              }
+
+              response.writeHead(
+                200, 
+                { 'Content-Type': 'application/json' }
+              ); 
+              response
+                .write(
+                JSON
+                .stringify(
+                  json_Response_Obj  
+                )
+              );
+              response.end();
+              console.log('request.on "end" query.allow response.end()');
+            } else {
+              // hyphens (-), underscores (_)
+              /*
+              cases:
+              - check "protocol": http | https
+              - check "host": /(([A-z0-9-_])+\.([A-z0-9-_])+)+/ig
+                /^([^\W\s]+)((\.)([^\W\s]+))*((\.)([^\W\s]+))$/g.exec("1freecode.25.ca.h");
+              - check http.get result / status code
+                OK ?
+                1xx: Information
+                  100 Continue
+                2xx: Successful
+                  200 OK
+                3xx: Redirection
+                  303 See Other
+                not OK
+                4xx: Client Error
+                  400 Bad Request
+                  404 Not Found
+                5xx: Server Error 
+                  505 HTTP Version Not Supported
+              */
+              console.log(`Checking url_Obj.protocol: ${url_Obj.protocol}`);            
               if (
-                /^([^\W\s]+)((\.)([^\W\s]+))*((\.)([^\W\s]+))$/g.test(url_Obj.host) 
+                url_Obj.protocol == "http:" || 
+                url_Obj.protocol == "https:"
               ) {
-                console.log(`Checking link: ${source_Link} in www`);
-                //Error: Protocol "https:" not supported. Expected "http:"
-                //http
-                getter = url_Obj.protocol == "http:" ? http : https;
-                getter
-                  .get(
-                    // extracted link (if any) goes here
-                    //'http://www.google.com/index.html', 
-                    source_Link,
-                    (res) => {
-                      // 302 Found	The requested page has moved temporarily to a new URL   
-                      console.log(`Got response: ${res.statusCode}`);
-                      /*
-                      // to consume response body
-                      // or use 'res.resume()';
-                      res.on('data', (d) => {
-                        // page content goes here
-                        process.stdout.write(d);
-                      });
-                      */
-                      /* async so parent process must await for result */
-                      json_Response_Obj = {
-                        "get_Response": res.statusCode,
-                        "source_Link": source_Link
-                      };  
-                      console.log('request.on "end" http.get json_Response_Obj: %j', json_Response_Obj);
-                      
-                      /*
-                      readable.pipe(destination[, options])
-                        destination <stream.Writable> The destination for writing data
-                        options <Object> Pipe options
-                          end <Boolean> End the writer when the reader ends. Default = true
-                      */
-                      //reader
-                      res
-                        .pipe(/*writer*/response);
-                      //res
-                      //  .unpipe(/*writer*/response);
-                      /*
-                      response
-                        .writeHead(
+                console.log(`Checking url_Obj.host: ${url_Obj.host}`);
+                if (
+                  /^([^\W\s]+)((\.)([^\W\s]+))*((\.)([^\W\s]+))$/g.test(url_Obj.host) 
+                ) {
+                  console.log(`Checking link: ${source_Link} in www`);
+                  //Error: Protocol "https:" not supported. Expected "http:"
+                  //http
+                  getter = url_Obj.protocol == "http:" ? http : https;
+                  getter
+                    .get(
+                      // extracted link (if any) goes here
+                      //'http://www.google.com/index.html', 
+                      source_Link,
+                      (res) => {
+                        // 302 Found	The requested page has moved temporarily to a new URL   
+                        console.log(`Got response: ${res.statusCode}`);
+                        /*
+                        // to consume response body
+                        // or use 'res.resume()';
+                        res.on('data', (d) => {
+                          // page content goes here
+                          process.stdout.write(d);
+                        });
+                        */
+                        /* async so parent process must await for result */
+                        json_Response_Obj = {
+                          "get_Response": res.statusCode,
+                          "source_Link": source_Link
+                        };  
+                        console.log('request.on "end" http.get json_Response_Obj: %j', json_Response_Obj);
+
+                        /*
+                        readable.pipe(destination[, options])
+                          destination <stream.Writable> The destination for writing data
+                          options <Object> Pipe options
+                            end <Boolean> End the writer when the reader ends. Default = true
+                        */
+                        //reader
+                        res
+                          .pipe(/*writer*/response);
+                        //res
+                        //  .unpipe(/*writer*/response);
+                        /*
+                        response
+                          .writeHead(
+                            200, 
+                            { 'Content-Type': 'application/json' }
+                        ); 
+                        response
+                          .end(
+                            JSON
+                              .stringify(
+                                json_Response_Obj  
+                            )
+                        ); 
+                        console.log('request.on "end" http.get response.end()');
+                        */
+                        // readable.on('readable', () => {});
+                        /*
+                        if you add a 'response' event handler, then 
+                        you must `consume` the 'data' 
+                        from the `response` object, 
+                        either 
+                        by calling 'response.read()' 
+                        whenever there is a 'readable' `event`, or 
+                        by adding a 'data' `handler`, or 
+                        by calling the '.resume()' method. 
+                        Until the 'data' is `consumed`, 
+                        the 'end' `event` will not `fire`. 
+                        Also, 
+                        until the 'data' is `read` 
+                        it will `consume` 'memory' 
+                        that can 
+                        eventually lead to 
+                        a 'process out of memory' error.
+                        */
+                        // consume response body
+                        res.resume();
+                      }
+                  ).on(
+                      'error', 
+                      (e) => {
+                        console.log(`Got error: ${e.message}`);
+                        json_Response_Obj = {
+                          "error": e.message
+                        };
+                        response.writeHead(
                           200, 
                           { 'Content-Type': 'application/json' }
-                      ); 
-                      response
-                        .end(
-                          JSON
-                            .stringify(
-                              json_Response_Obj  
-                          )
-                      ); 
-                      console.log('request.on "end" http.get response.end()');
-                      */
-                      // readable.on('readable', () => {});
-                      /*
-                      if you add a 'response' event handler, then 
-                      you must `consume` the 'data' 
-                      from the `response` object, 
-                      either 
-                      by calling 'response.read()' 
-                      whenever there is a 'readable' `event`, or 
-                      by adding a 'data' `handler`, or 
-                      by calling the '.resume()' method. 
-                      Until the 'data' is `consumed`, 
-                      the 'end' `event` will not `fire`. 
-                      Also, 
-                      until the 'data' is `read` 
-                      it will `consume` 'memory' 
-                      that can 
-                      eventually lead to 
-                      a 'process out of memory' error.
-                      */
-                      // consume response body
-                      res.resume();
-                    }
-                ).on(
-                    'error', 
-                    (e) => {
-                      console.log(`Got error: ${e.message}`);
-                      json_Response_Obj = {
-                        "error": e.message
-                      };
-                      response.writeHead(
-                        200, 
-                        { 'Content-Type': 'application/json' }
-                      ); 
-                      response
-                        .write(
-                          JSON
-                            .stringify(
-                              json_Response_Obj  
-                          )
-                      );
-                      response.end();
-                      console.log('request.on "end" error response.end()');
-                      
-                    }
-                );
+                        ); 
+                        response
+                          .write(
+                            JSON
+                              .stringify(
+                                json_Response_Obj  
+                            )
+                        );
+                        response.end();
+                        console.log('request.on "end" error response.end()');
+
+                      }
+                  );
+                } else {
+                  json_Response_Obj = {
+                    "error": "bad URL host"
+                  };
+                  response.writeHead(
+                    200, 
+                    { 'Content-Type': 'application/json' }
+                  ); 
+                  response
+                    .write(
+                      JSON
+                        .stringify(
+                          json_Response_Obj  
+                      )
+                  );
+                  response.end();
+                  console.log('request.on "end" error response.end()');
+
+                }
               } else {
+                // false positive on https://api-url-shortener-microservice.herokuapp.com/newFGhj
+                // reaction on `path` starting with 'new'
+                // so it must be followed by '/'
+                // in order to be not part of a short_Link
                 json_Response_Obj = {
-                  "error": "bad URL host"
+                  "error": "bad URL protocol"
                 };
+
                 response.writeHead(
                   200, 
                   { 'Content-Type': 'application/json' }
@@ -670,26 +747,7 @@ var http_Server = http.createServer(
                 );
                 response.end();
                 console.log('request.on "end" error response.end()');
-
               }
-            } else {
-              json_Response_Obj = {
-                "error": "bad URL protocol"
-              };
-              
-              response.writeHead(
-                200, 
-                { 'Content-Type': 'application/json' }
-              ); 
-              response
-                .write(
-                  JSON
-                    .stringify(
-                      json_Response_Obj  
-                  )
-              );
-              response.end();
-              console.log('request.on "end" error response.end()');
             }
             
           } else {
