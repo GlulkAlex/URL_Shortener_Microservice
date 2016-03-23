@@ -81,6 +81,8 @@ var index_Template_Content_List = [
   '<html>',
     '<head>',
       '<title>URL Shortener Microservice</title>',
+      '<link rel="icon" type="image/x-icon"',
+      'href="favicon.ico" />',
       //'<link rel="stylesheet" type="text/css" href="/main.css"/>',
       '<style>',
         'body {',
@@ -172,25 +174,37 @@ function send_JSON_Response(
 ) {
   message = message ? message : 'res.on "end"'; 
   console.log(`from send_JSON_Response, is response.headersSent: ${response.headersSent}`);
-  console.log(`from send_JSON_Response, is response.finished: ${response.finished}`);  
-  console.log(message, 'json_Response_Obj: %j', json_Response_Obj);
-  response
-    .writeHead(
-    200, 
-    { 'Content-Type': 'application/json' }
-  ); 
-  //* close `writable` `stream` *
-  response
-    //.write(
-    .end(
-      //TypeError: Converting circular structure to JSON
-      JSON
-      .stringify(                
-        json_Response_Obj  
-      )
-  );
-  //response.end();
-  console.log(message, 'response.end()'); 
+  /*
+  response.finished
+  Boolean value that indicates 
+  whether the response has completed. 
+  Starts as 'false'. 
+  After 'response.end()' executes, 
+  the value will be true.
+  */
+  console.log(`from send_JSON_Response, is response.finished: ${response.finished}`);
+  if (response.finished) {
+    console.log('response.end() occur already. Nothing will be written as / to response.');
+  } else {
+    console.log(message, 'json_Response_Obj: %j', json_Response_Obj);
+    response
+      .writeHead(
+      200, 
+      { 'Content-Type': 'application/json' }
+    ); 
+    //* close `writable` `stream` *
+    response
+      //.write(
+      .end(
+        //TypeError: Converting circular structure to JSON
+        JSON
+        .stringify(                
+          json_Response_Obj  
+        )
+    );
+    //response.end();
+    console.log(message, 'response.end()'); 
+  }
     
   //return ;//null; //void //Unit
 }
@@ -1445,12 +1459,12 @@ var http_Server = http.createServer(
                   )
                 }
             );
+            response.end();
+            console.log('request.on "end", response.end(), Redirection to request.headers.host');
           } 
             
           //response
           //  .redirect(url_Obj.protocol + '://' + url_Obj.host);  
-          response.end();
-          console.log('request.on "end" Redirection response.end()');
         }  
                 
         /* close `writable` `stream` */

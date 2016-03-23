@@ -2,7 +2,7 @@
   "name": "API Basejump: URL Shortener Microservice",
   "description": "A Node.js microservice app using Express 4",
   "repository": "https://github.com/GlulkAlex/URL_Shortener_Microservice.git",
-  "logo": "favicon.ico",
+  "logo": "https://www.w3.org/Icons/SVG/svg-logo-v.svg",
   "keywords": [
     "node", 
     "express", 
@@ -11,5 +11,16 @@
     "mongodb",
     "url"  
   ],
-  "image": "heroku/nodejs"
+  "image": "heroku/nodejs",
+  "website": "https://api-url-shortener-microservice.herokuapp.com/",
+  "success_url": "/",
+  "env": {
+    "SECRET_TOKEN": {
+      "description": "A secret key for verifying the integrity of signed cookies.",
+      "generator": "secret"
+    }
+  },
+  "addons": [
+    "mLab:Sandbox"
+  ]  
 }
