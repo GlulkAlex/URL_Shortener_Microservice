@@ -171,25 +171,28 @@ function send_JSON_Response(
   message  
 ) {
   message = message ? message : 'res.on "end"'; 
+  console.log(`from send_JSON_Response, is response.headersSent: ${response.headersSent}`);
+  console.log(`from send_JSON_Response, is response.finished: ${response.finished}`);  
   console.log(message, 'json_Response_Obj: %j', json_Response_Obj);
-    response
-      .writeHead(
-      200, 
-      { 'Content-Type': 'application/json' }
-    ); 
-    //* close `writable` `stream` *
-    response
-      //.write(
-      .end(
+  response
+    .writeHead(
+    200, 
+    { 'Content-Type': 'application/json' }
+  ); 
+  //* close `writable` `stream` *
+  response
+    //.write(
+    .end(
       //TypeError: Converting circular structure to JSON
       JSON
       .stringify(                
         json_Response_Obj  
       )
-    );
-    //response.end();
-    console.log(message, 'response.end()'); 
-    return ;//null; //void //Unit
+  );
+  //response.end();
+  console.log(message, 'response.end()'); 
+    
+  //return ;//null; //void //Unit
 }
 
 if (input_args_list.length >= 3) {
@@ -534,8 +537,8 @@ var http_Server = http.createServer(
             if it decides that page content is not changing
             ? use E-Tag ?
             */
-            console.log('request.on "end" new:', end_Points_List[1]);
-            response_Body = "Try route `/api/whoami`";            
+            console.log('request.on "end" path:', url_Obj.path, 'route:', end_Points_List[0]);
+            //response_Body = "Try route `/api/whoami`";            
             response_Body = index_Template_Content_Str
             //303 See Other	
             // The requested page can be found under a different URL
@@ -552,6 +555,7 @@ var http_Server = http.createServer(
               response_Body,
               'utf8'
             );
+            response.end();
         } else if (
           // cheking match for "/new/" (not just "/new")
           url_Obj.path.slice(0, 5) == "/new/" &&//end_Points_List[1] + "/" 
@@ -1006,7 +1010,7 @@ var http_Server = http.createServer(
                                           response,
                                           json_Response_Obj,
                                           // context 
-                                          'res.on "end" cursor.find'  
+                                          'res.on "end" cursor.find found'  
                                         );
                                       } else {
                                         json_Response_Obj = {
@@ -1019,7 +1023,7 @@ var http_Server = http.createServer(
                                           response,
                                           json_Response_Obj,
                                           // context 
-                                          'res.on "end" cursor.find'  
+                                          'res.on "end" cursor.find not found'  
                                         );
                                       }
                                     }
@@ -1040,7 +1044,7 @@ var http_Server = http.createServer(
                                         response,
                                         json_Response_Obj,
                                         // context 
-                                        'res.on "end" cursor.find'  
+                                        'res.on "end" cursor.find catch error'  
                                       );
                                     }
                                   );
@@ -1130,39 +1134,26 @@ var http_Server = http.createServer(
                         json_Response_Obj = {
                           "error": e.message
                         };
-                        response.writeHead(
-                          200, 
-                          { 'Content-Type': 'application/json' }
-                        ); 
-                        response
-                          .write(
-                            JSON
-                              .stringify(
-                                json_Response_Obj  
-                            )
+                        send_JSON_Response(
+                          // obj -> writable stream
+                          response,
+                          json_Response_Obj,
+                          // context 
+                          'request.on "end" error'  
                         );
-                        response.end();
-                        console.log('request.on "end" error response.end()');
-
                       }
                   );
                 } else {
                   json_Response_Obj = {
                     "error": "bad URL host"
                   };
-                  response.writeHead(
-                    200, 
-                    { 'Content-Type': 'application/json' }
-                  ); 
-                  response
-                    .write(
-                      JSON
-                        .stringify(
-                          json_Response_Obj  
-                      )
+                  send_JSON_Response(
+                    // obj -> writable stream
+                    response,
+                    json_Response_Obj,
+                    // context 
+                    'request.on "end" error'  
                   );
-                  response.end();
-                  console.log('request.on "end" error response.end()');
 
                 }
               } else {
@@ -1174,19 +1165,13 @@ var http_Server = http.createServer(
                   "error": "bad URL protocol"
                 };
 
-                response.writeHead(
-                  200, 
-                  { 'Content-Type': 'application/json' }
-                ); 
-                response
-                  .write(
-                    JSON
-                      .stringify(
-                        json_Response_Obj  
-                    )
+                send_JSON_Response(
+                  // obj -> writable stream
+                  response,
+                  json_Response_Obj,
+                  // context 
+                  'request.on "end" error'  
                 );
-                response.end();
-                console.log('request.on "end" error response.end()');
               }
             }
             
@@ -1195,19 +1180,13 @@ var http_Server = http.createServer(
             json_Response_Obj = {
               "error": 'Nothing after "new" found in URL. Link expected.'
             };  
-            response.writeHead(
-              200, 
-              { 'Content-Type': 'application/json' }
-            ); 
-            response
-              .write(
-                JSON
-                  .stringify(
-                    json_Response_Obj  
-                )
+            send_JSON_Response(
+              // obj -> writable stream
+              response,
+              json_Response_Obj,
+              // context 
+              'request.on "end" error'  
             );
-            response.end();
-            console.log('request.on "end" error response.end()');
           }
         } else {
           /* Redirection */ 
@@ -1276,13 +1255,8 @@ var http_Server = http.createServer(
                       // use index
                       //.hint('original_url')
                       .limit(1)
-                      .project({"_id": false, "original_url": true, "short_url": 1})
+                      .project({"_id": false, "original_url": true, "short_url": 1});
                       //.stream();
-                    .catch(
-                      (e) => {
-                        console.log(`catch error on mongoDB find cursor: ${e.message}`); 
-                      }
-                    );
                     
                     // hasNext(callback) => {Promise}
                     // Check if 
@@ -1294,10 +1268,22 @@ var http_Server = http.createServer(
                           //test.equal(null, err);
                           //test.ok(r);
                       ).then((r) => {
+                        console.log(`cursor.hasNext.then`);
                       // next(callback) => {Promise}
                       // Get the next available `document` from the `cursor`, 
                       // returns null 
                       // if no more documents are available.
+                      /*
+                      By default, 
+                      the server will automatically close the cursor 
+                      after 10 minutes of inactivity, or 
+                      if client has exhausted the cursor. 
+                      To override this behavior in the mongo shell, 
+                      you can use the cursor.noCursorTimeout() method
+                      */
+                      // inherited rewind() => {null}
+                      // Resets the cursor
+                      cursor.rewind();
                       cursor
                       .next(
                         //(next_err, doc) => {
@@ -1305,15 +1291,16 @@ var http_Server = http.createServer(
                           "use strict";
                           ////assert.equal(err, null);  
                           //assert.equal(1 || 0, docs.length);
+                          console.log(`cursor.next.then`);
                           if (
                             //next_err
                             false
                           ) {
                             // error on mongoDB find: server ds011399-a.mlab.com:11399 sockets closed
-                            console.log(`error on mongoDB find ${original_url}: ${next_err.message}`);
+                            //console.log(`error on mongoDB find ${original_url}: ${next_err.message}`);
                             json_Response_Obj = {
                               "message": 'searching for original link ' + source_Link + ' in db ...',
-                              "result": next_err.message
+                              "result": false//next_err.message
                             };  
                             send_JSON_Response(
                               // obj -> writable stream
@@ -1324,17 +1311,26 @@ var http_Server = http.createServer(
                             );
                           } else {
 
-                            console.log(`query on ${collection_Name} content: ${doc}`);
+                            console.log(`query on ${collection_Name} collection content: %j`, doc);
                             //console.log(`collection ${collection_Name} content.length: ${docs.length}`);  
                             //console.log("collection_Name content:\n%j", docs); 
 
+                            //null ? true: false -> false
+                            //if (null){"t";}else{"f";} => "f"
                             if (
+                              doc &&
+                              //typeof(null) == "object"
+                              typeof(doc) == "object"
                               //docs.length > 0
                               //({}).hasOwnProperty("b")
-                              doc.hasOwnProperty("original_url")
+                              //doc.hasOwnProperty("original_url")
                             ) {
                               // found
+                              console.log(`cursor.next.then, is response.headersSent: ${response.headersSent}`);
+                              console.log(`cursor.next.then, is response.finished: ${response.finished}`);
+                              
                               json_Response_Obj = {
+                                "original_url": doc.original_url, 
                                 "message": 'searching for original link in db ...',
                                 "result": doc//true
                               };  
@@ -1365,12 +1361,16 @@ var http_Server = http.createServer(
                             }
                             // Close db
                             db.close();
-                            console.log(`Close db after ${original_url} search`);
+                            console.log(`Close db after search for original_url`);
                           }
                         }
                       )
                       .catch(
                       (e) => {
+                        //catch error on mongoDB cursor.next: original_url is not defined
+                        //catch error on mongoDB cursor.next: cursor is exhausted
+                        //catch error on mongoDB cursor.next: 
+                        // Cannot read property 'hasOwnProperty' of null
                         console.log(`catch error on mongoDB cursor.next: ${e.message}`); 
                         json_Response_Obj = {
                           "message": 'searching for original link in db ...',
@@ -1381,7 +1381,7 @@ var http_Server = http.createServer(
                           response,
                           json_Response_Obj,
                           // context 
-                          'Redirection cursor.next'  
+                          'Redirection cursor.next catch error'  
                         );
                       }
                     );
@@ -1398,7 +1398,7 @@ var http_Server = http.createServer(
                           response,
                           json_Response_Obj,
                           // context 
-                          'Redirection cursor.hasNext'  
+                          'Redirection cursor.hasNext catch error'  
                         );
                       }
                     );
