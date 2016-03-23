@@ -162,6 +162,36 @@ var getter = https;
 var response_Body; 
 var source_Link = "";
 
+// helper
+function send_JSON_Response(
+  // obj -> writable stream
+  response,
+  json_Response_Obj,
+  // context 
+  message  
+) {
+  message = message ? message : 'res.on "end"'; 
+  console.log(message, 'json_Response_Obj: %j', json_Response_Obj);
+    response
+      .writeHead(
+      200, 
+      { 'Content-Type': 'application/json' }
+    ); 
+    //* close `writable` `stream` *
+    response
+      //.write(
+      .end(
+      //TypeError: Converting circular structure to JSON
+      JSON
+      .stringify(                
+        json_Response_Obj  
+      )
+    );
+    //response.end();
+    console.log(message, 'response.end()'); 
+    return ;//null; //void //Unit
+}
+
 if (input_args_list.length >= 3) {
   //first_Name = input_args_list[2].trim();
 }
@@ -219,6 +249,7 @@ mongo
               }
               /* finaly */
               db.close();
+              //console.log(`Close db after ${original_url} search`);
             }
           }
         );
@@ -302,7 +333,8 @@ var http_Server = http.createServer(
     var query_Obj = {};
     var query_List = [];
     var query_Allow_Prop = false;  
-    var source_Link = '';
+    var source_Link = "";
+    var short_Link = "";  
     var json_Response_Obj = {}; 
     // links  
     var collection_Size = 0;  
@@ -550,6 +582,7 @@ var http_Server = http.createServer(
               //url_Obj.query.allow
               query_Allow_Prop
             ) {
+              console.log(`query_Allow_Prop: ${query_Allow_Prop}, so source_Link: ${source_Link} considered to be correct`);
               /*
               1. check Mongo if `source_Link` exist already
                 1.1 if true -> return stored `short_Link`
@@ -563,15 +596,17 @@ var http_Server = http.createServer(
                 .connect(
                   //url, 
                   mongoLab_URI,  
-                  function(
-                      err, 
-                      db
-                  ) {
+                  (
+                    err, 
+                    db
+                  ) => {
+                    "use strict";    
                     // db gives access to the database
                     if (err) {
                       console.log('mongo.connect error:', err);
                       //throw err;
                     } else {
+                      // scope ?
                       const collection = db.collection(collection_Name);
 
                       /*
@@ -701,19 +736,13 @@ var http_Server = http.createServer(
                                               json_Response_Obj = {
                                                 "error": err.message
                                               };
-                                              response
-                                                .writeHead(
-                                                  200, 
-                                                  { 'Content-Type': 'application/json' }
-                                              ); 
-                                              response
-                                                .write(
-                                                JSON
-                                                .stringify(
-                                                  json_Response_Obj  
-                                                )
-                                              );
-                                              response.end();
+                                              send_JSON_Response(
+                                                // obj -> writable stream
+                                                response,
+                                                json_Response_Obj,
+                                                // context 
+                                                'request.on "end" query.allow'  
+                                              );                                               
                                               console
                                                 .log('request.on "end" query.allow response.end()');  
 
@@ -725,24 +754,19 @@ var http_Server = http.createServer(
                                                 console.log(`result.result.n: ${result.result.n}`);
                                                 console.log('result.result: %j', result.result);
                                               }
-                                              response
-                                                .writeHead(
-                                                  200, 
-                                                  { 'Content-Type': 'application/json' }
-                                              ); 
-                                              response
-                                                .write(
-                                                JSON
-                                                .stringify(
-                                                  json_Response_Obj  
-                                                )
+                                              send_JSON_Response(
+                                                // obj -> writable stream
+                                                response,
+                                                json_Response_Obj,
+                                                // context 
+                                                'request.on "end" query.allow'  
                                               );
-                                              response.end();
                                               console
                                                 .log('request.on "end" query.allow response.end()');  
 
                                               /* finaly */
                                               db.close();
+                                              console.log(`Close db after doc insert search`);
                                             }
                                           }
                                       );
@@ -803,19 +827,13 @@ var http_Server = http.createServer(
                                       json_Response_Obj = {
                                         "error": err.message
                                       };
-                                      response
-                                        .writeHead(
-                                          200, 
-                                          { 'Content-Type': 'application/json' }
-                                      ); 
-                                      response
-                                        .write(
-                                        JSON
-                                        .stringify(
-                                          json_Response_Obj  
-                                        )
+                                      send_JSON_Response(
+                                        // obj -> writable stream
+                                        response,
+                                        json_Response_Obj,
+                                        // context 
+                                        'request.on "end" query.allow'  
                                       );
-                                      response.end();
                                       console
                                         .log('request.on "end" query.allow response.end()');  
                                       
@@ -827,24 +845,19 @@ var http_Server = http.createServer(
                                         console.log(`result.result.n: ${result.result.n}`);
                                         console.log('result.result: %j', result.result);
                                       }
-                                      response
-                                        .writeHead(
-                                          200, 
-                                          { 'Content-Type': 'application/json' }
-                                      ); 
-                                      response
-                                        .write(
-                                        JSON
-                                        .stringify(
-                                          json_Response_Obj  
-                                        )
+                                      send_JSON_Response(
+                                        // obj -> writable stream
+                                        response,
+                                        json_Response_Obj,
+                                        // context 
+                                        'request.on "end" query.allow'  
                                       );
-                                      response.end();
                                       console
                                         .log('request.on "end" query.allow response.end()');  
 
                                       /* finaly */
                                       db.close();
+                                      console.log(`Close db after doc insert`);
                                     }
                                   }
                               );
@@ -941,28 +954,133 @@ var http_Server = http.createServer(
                           .on(
                             'end', 
                             () => {
+                              console.log(`Checking MongoDB for stored source_Link: ${source_Link}`);
+                              if (res.statusCode < 400) {
+                              mongo
+                              .connect(
+                                mongoLab_URI//,
+                              )
+                              .then(
+                                //null,
+                                (
+                                  //err, 
+                                  db
+                                ) => {
+                                  "use strict";
+                                  // db gives access to the database
+                                  // scope ?
+                                  //const 
+                                  var collection = db.collection(collection_Name);
+
+                                  var cursor = collection
+                                  .find(
+                                    {
+                                      "original_url": source_Link
+                                    }
+                                  )
+                                  // use index
+                                  // ? must be 'text index' ?
+                                  // A collection can have at most one 'text' index.
+                                  // But it is possible to
+                                  // index multiple fields for the 'text' index.
+                                  // `hint` or more likely `indexes` fails
+                                  //.hint('original_url')
+                                  //.hint("_fts")
+                                  //.hint("_ftsx")
+                                  .limit(1)
+                                  .project({"_id": false, "original_url": true, "short_url": 1})
+                                  // toArray(callback) => {Promise}
+                                  .toArray()
+                                  .then(
+                                    (docs) => {
+                                      console.log('find result: %j', docs); 
+                                      if (docs.length > 0) {
+                                        json_Response_Obj = {
+                                          "get_Response": res.statusCode,
+                                          "source_Link": source_Link,
+                                          "short_url": docs[0].short_url,
+                                          "message": "Short link found"
+                                        };
+                                        send_JSON_Response(
+                                          // obj -> writable stream
+                                          response,
+                                          json_Response_Obj,
+                                          // context 
+                                          'res.on "end" cursor.find'  
+                                        );
+                                      } else {
+                                        json_Response_Obj = {
+                                          "get_Response": res.statusCode,
+                                          "source_Link": source_Link,
+                                          "message": "Short link not found"
+                                        };
+                                        send_JSON_Response(
+                                          // obj -> writable stream
+                                          response,
+                                          json_Response_Obj,
+                                          // context 
+                                          'res.on "end" cursor.find'  
+                                        );
+                                      }
+                                    }
+                                  )
+                                  .catch(
+                                    (e) => {
+                                      // Unable to execute query: 
+                                      // error processing query: 
+                                      // ns=heroku_4mwk4dd8.links limit=1 skip=0
+                                      console.log(`catch error on mongoDB find cursor: ${e.message}`); 
+                                      json_Response_Obj = {
+                                        "get_Response": res.statusCode,
+                                        "source_Link": source_Link,
+                                        "message": e.message
+                                      };
+                                      send_JSON_Response(
+                                        // obj -> writable stream
+                                        response,
+                                        json_Response_Obj,
+                                        // context 
+                                        'res.on "end" cursor.find'  
+                                      );
+                                    }
+                                  );
+                                }
+                              )
+                              .catch(
+                                (e) => {
+                                  console.log(`catch error on mongoDB connect: ${e.message}`);
+                                  json_Response_Obj = {
+                                    "get_Response": res.statusCode,
+                                    "source_Link": source_Link,
+                                    "message": e.message                                    
+                                  };
+                                  send_JSON_Response(
+                                    // obj -> writable stream
+                                    response,
+                                    json_Response_Obj,
+                                    // context 
+                                    'res.on "end" cursor.find'  
+                                  );
+                                }
+                              );
+                    
                               //writer
-                              //  .end('Goodbye\n');
+                              //  .end('Goodbye\n'); 
+                            } else {
+                              console.log(`source_Link: ${source_Link} not found in www`);
                               json_Response_Obj = {
                                 "get_Response": res.statusCode,
-                                "source_Link": source_Link
-                              }; 
-                              console.log('res.on "end" json_Response_Obj: %j', json_Response_Obj);
-                              response
-                                .writeHead(
-                                  200, 
-                                  { 'Content-Type': 'application/json' }
-                              ); 
-                              //* close `writable` `stream` *
-                              response
-                                .end(
-                                  //TypeError: Converting circular structure to JSON
-                                  JSON
-                                  .stringify(                
-                                    json_Response_Obj  
-                                  )
+                                "source_Link": source_Link,
+                                "message": "source_Link not found in www"                                    
+                              };
+                              send_JSON_Response(
+                                // obj -> writable stream
+                                response,
+                                json_Response_Obj,
+                                // context 
+                                'res.on "end" cursor.find'  
                               );
-                              console.log('res.on "end" response.end()');  
+                            }                                                           
                           }
                         );
                         /**/
@@ -1100,25 +1218,32 @@ var http_Server = http.createServer(
           */
           console.log('request.on "end" not "root"');    
           console.log('request.on "end" -> Redirection');
+          short_Link = url_Obj.path.slice(1);
+          console.log('Checking short_Link', short_Link, "format"); 
           // "net/.html".indexOf("\/") != -1
           if (
             //url_Obj.path.indexOf("\/") == -1
             // /^[A-z]+$/g.exec("netHtml");
-            /^[A-z]+$/g.test(url_Obj.path.slice(1))
+            /^[A-z]+$/g.test(short_Link)
           ) {
             // search for entry in db
             console.log('request.on "end" "path" matches expected "short_Link" format'); 
             console.log('searching for original link in db ...'); 
             
             // for correct .env use `heroku local`
+            //static MongoClient.connect(url, options, callback) => {Promise}
             mongo
               .connect(
                 //url, 
-                mongoLab_URI,  
+                mongoLab_URI, 
+                // Authenticate -> success
+                // but callback -> error / fails
+                //connectCallback(error, db)
                 (
                   err, 
                   db
                 ) => {
+                  "use strict";
                   // db gives access to the database
                   if (err) {
                     console.log('mongo.connect error:', err);
@@ -1127,52 +1252,75 @@ var http_Server = http.createServer(
                       "message": 'searching for original link in db ...',
                       "result": err.message
                     };  
-                    response.writeHead(
-                      200, 
-                      { 'Content-Type': 'application/json' }
-                    ); 
-                    response
-                      .write(
-                      JSON
-                      .stringify(
-                        json_Response_Obj  
-                      )
+                    send_JSON_Response(
+                      // obj -> writable stream
+                      response,
+                      json_Response_Obj,
+                      // context 
+                      'Redirection mongo.connect'  
                     );
                   } else {
-                    const collection = db.collection(collection_Name);
-
+                    // scope ?
+                    //const 
+                    var collection = db.collection(collection_Name);
+                    
+                    // Peform a find to get a cursor
+                    //var stream = //collection.find().stream();
+                    var cursor = 
                     collection
                       .find(
                         {
-                          //"short_url":"Alex"
-                          "original_url": source_Link
+                          "short_url":short_Link
                         }
                       )
                       // use index
-                      .hint('original_url')
+                      //.hint('original_url')
                       .limit(1)
                       .project({"_id": false, "original_url": true, "short_url": 1})
+                      //.stream();
+                    .catch(
+                      (e) => {
+                        console.log(`catch error on mongoDB find cursor: ${e.message}`); 
+                      }
+                    );
+                    
+                    // hasNext(callback) => {Promise}
+                    // Check if 
+                    // there is any `document` still available in the `cursor`
+                    // Perform hasNext check
+                    cursor
+                      .hasNext(
+                        //(err, r) => {
+                          //test.equal(null, err);
+                          //test.ok(r);
+                      ).then((r) => {
+                      // next(callback) => {Promise}
+                      // Get the next available `document` from the `cursor`, 
+                      // returns null 
+                      // if no more documents are available.
+                      cursor
                       .next(
-                        (err, doc) => {
+                        //(next_err, doc) => {
+                      ).then((doc) => {    
+                          "use strict";
                           ////assert.equal(err, null);  
                           //assert.equal(1 || 0, docs.length);
-                          if (err) {
+                          if (
+                            //next_err
+                            false
+                          ) {
                             // error on mongoDB find: server ds011399-a.mlab.com:11399 sockets closed
-                            console.log(`error on mongoDB find: ${err.message}`);
+                            console.log(`error on mongoDB find ${original_url}: ${next_err.message}`);
                             json_Response_Obj = {
                               "message": 'searching for original link ' + source_Link + ' in db ...',
-                              "result": err.message
+                              "result": next_err.message
                             };  
-                            response.writeHead(
-                              200, 
-                              { 'Content-Type': 'application/json' }
-                            ); 
-                            response
-                              .write(
-                              JSON
-                              .stringify(
-                                json_Response_Obj  
-                              )
+                            send_JSON_Response(
+                              // obj -> writable stream
+                              response,
+                              json_Response_Obj,
+                              // context 
+                              'Redirection cursor.next'  
                             );
                           } else {
 
@@ -1190,44 +1338,89 @@ var http_Server = http.createServer(
                                 "message": 'searching for original link in db ...',
                                 "result": doc//true
                               };  
-                              response.writeHead(
-                                200, 
-                                { 'Content-Type': 'application/json' }
-                              ); 
-                              response
-                                .write(
-                                  JSON
-                                    .stringify(
-                                      json_Response_Obj  
-                                  )
+                              send_JSON_Response(
+                                // obj -> writable stream
+                                response,
+                                json_Response_Obj,
+                                // context 
+                                'Redirection cursor.next'  
                               );
+                              // Close db
+                              //db.close();
                             } else {
                               // not found
                               json_Response_Obj = {
                                 "message": 'searching for original link in db ...',
                                 "result": false
                               };  
-                              response.writeHead(
-                                200, 
-                                { 'Content-Type': 'application/json' }
-                              ); 
-                              response
-                                .write(
-                                  JSON
-                                    .stringify(
-                                      json_Response_Obj  
-                                  )
+                              send_JSON_Response(
+                                // obj -> writable stream
+                                response,
+                                json_Response_Obj,
+                                // context 
+                                'Redirection cursor.next'  
                               );
+                              // Close db
+                              //db.close();
                             }
                             // Close db
                             db.close();
+                            console.log(`Close db after ${original_url} search`);
                           }
                         }
-                    ).catch(
+                      )
+                      .catch(
                       (e) => {
-                        `catch error on mongoDB find: ${e.message}` 
+                        console.log(`catch error on mongoDB cursor.next: ${e.message}`); 
+                        json_Response_Obj = {
+                          "message": 'searching for original link in db ...',
+                          "error": e.message
+                        };  
+                        send_JSON_Response(
+                          // obj -> writable stream
+                          response,
+                          json_Response_Obj,
+                          // context 
+                          'Redirection cursor.next'  
+                        );
                       }
                     );
+                    })
+                    .catch(
+                      (e) => {
+                        console.log(`catch error on mongoDB cursor.hasNext: ${e.message}`);
+                        json_Response_Obj = {
+                          "message": 'searching for original link in db ...',
+                          "error": e.message
+                        };  
+                        send_JSON_Response(
+                          // obj -> writable stream
+                          response,
+                          json_Response_Obj,
+                          // context 
+                          'Redirection cursor.hasNext'  
+                        );
+                      }
+                    );
+                    
+                    /*
+                    // Execute find on all the documents
+                    stream
+                      .on('end', () => {
+                      db.close();
+                    });
+
+                    stream
+                      .on('data', (data) => {
+                      //test.ok(data != null);
+                      if (data) {
+                        console.log(`stream on data ${data} true`);
+                      } else {
+                        console.log(`stream on data ${data} false`);
+                      }
+                    });
+                    */
+ 
                   } 
                 }
             );
