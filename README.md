@@ -16,10 +16,22 @@ deploy it to Heroku.
   3. When user visit that shortened URL,  
   it will redirect to the original link.  
   
-Example usage (live demo):
+Live demo:
 ---
   * [https://api-url-shortener-microservice.herokuapp.com/](https://api-url-shortener-microservice.herokuapp.com/)
-
-Example output:
----
-    { "original_url": "http://freecodecamp.com/news", "short_url": "https://shurli.herokuapp.com/4" }
+> ###Usage example:
+  * creating short link from *valid* __URL__:
+  input:
+    [https://api-url-shortener-microservice.herokuapp.com/new/http://freecodecamp.com/news](https://api-url-shortener-microservice.herokuapp.com/new/http://freecodecamp.com/news)
+  output:
+    `{ "original_url": "http://freecodecamp.com/news", "short_url": "https://api-url-shortener-microservice.herokuapp.com/4" }`
+  * using created short link:
+  input:
+    [https://api-url-shortener-microservice.herokuapp.com/cnn](https://api-url-shortener-microservice.herokuapp.com/cnn)
+  output:
+    redirect to [http://freecodecamp.com/news]([http://freecodecamp.com/news])
+  * creating short link from __invalid__ (or *non existed*) __URL__:
+  input:
+    [https://api-url-shortener-microservice.herokuapp.com/new/invalid_URL/?allow=true](https://api-url-shortener-microservice.herokuapp.com/new/invalid_URL/?allow=true)
+  output:
+    `{ "original_url": "invalid_URL/", "short_url": "https://api-url-shortener-microservice.herokuapp.com/eRR" }`
