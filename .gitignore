@@ -45,3 +45,5 @@ node_modules
 #
 Dockerfile
 docker-compose.yml
+# IDE specific
+.idea

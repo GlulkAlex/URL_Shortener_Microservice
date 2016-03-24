@@ -575,7 +575,16 @@ var http_Server = http.createServer(
           url_Obj.path.slice(0, 5) == "/new/" &&//end_Points_List[1] + "/" 
           url_Obj.path.length > "/new/".length
         ) {
-          
+          /*
+          {"protocol":"http:",
+          "slashes":true,"auth":null,
+          "host":"freecodecamp.com","port":null,
+          "hostname":"freecodecamp.com","hash":null,
+          "search":"?allow=true","query":{"allow":"true"},
+          "pathname":"/news/",
+          "path":"/news/?allow=true",
+          "href":"http://freecodecamp.com/news/?allow=true"}
+          */
           source_Link = url_Obj.path.slice(5);
           console.log('request.on "end" source_Link:', source_Link);
           if (
@@ -585,22 +594,15 @@ var http_Server = http.createServer(
             console.log('request.on "end" something after "new/" in:', url_Obj.path);
             url_Obj = url.parse(source_Link, true);
             //console.log(`url_Obj.pathname: ${url_Obj.pathname}`);
-            /*
-            query_List = [];
-            for(var item in url_Obj.query){
-              query_List.push(item);
-              query_List.push(url_Obj.query[item]);
-            } 
-            console.log('request.on "end" source_Link query_List\n%j:', query_List);
-            */
+            query_Allow_Prop = url_Obj.query.allow;
             console.log('request.on "end" source_Link url_Obj\n%j:', url_Obj);
             // `allow`
             if (
-              //query_List.length > 0 &&
               //url_Obj.query.allow
               query_Allow_Prop
             ) {
-              console.log(`query_Allow_Prop: ${query_Allow_Prop}, so source_Link: ${source_Link} considered to be correct`);
+              console.log(
+                `query_Allow_Prop: ${query_Allow_Prop}, so source_Link: ${source_Link} considered to be correct`);
               /*
               1. check Mongo if `source_Link` exist already
                 1.1 if true -> return stored `short_Link`
@@ -613,284 +615,204 @@ var http_Server = http.createServer(
               mongo
                 .connect(
                   //url, 
-                  mongoLab_URI,  
-                  (
-                    err, 
-                    db
-                  ) => {
+                  mongoLab_URI
+                )
+                .then(
+                  (db) => {
                     "use strict";    
                     // db gives access to the database
-                    if (err) {
-                      console.log('mongo.connect error:', err);
-                      //throw err;
-                    } else {
-                      // scope ?
-                      const collection = db.collection(collection_Name);
+                    // scope ?
+                    const collection = db.collection(collection_Name);
 
+                    // count(applySkipLimit, options, callback) => {Promise}
+                    // Get the `count` of `documents` for this `cursor`
+                    /*
+                    new Promise(executor);
+                    new Promise(function(resolve, reject) { ... });
+                    */
+                    // count(query, options, callback) => Promise
+                    var cursor = collection
+                      // has content / items for search
                       /*
-                      new Promise(executor);
-                      new Promise(function(resolve, reject) { ... });
+                      find(query) => {Cursor}
+                        Creates a `cursor`
+                        for a `query`
+                        that can be used
+                        to iterate over `results` from MongoDB
+
+                      Cursor#event:readable
+                      so stream and
+                      can be piped
                       */
-                      // count(query, options, callback) => Promise  
-                      collection
-                        .count({})
-                        .then(
-                          (count) => {
-                            ////assert.equal(err, null);  
-                            //assert.equal(1, count);
-                            console.log(`collection ${collection_Name} consist of / contains: ${count} documents`);
-                            
-                            if (count > 0) {
-                              // has content / items for search
+                      //find().limit(1).next(function(err, doc){})
+                      .find(
+                        {
+                          //"short_url":"Alex"
+                          // [ReferenceError: short_Link is not defined]
+                          "original_url": source_Link
+                        }
+                      )
+                      // use index
+                      //.hint('original_url')
+                      .limit(1)
+                      .project({"_id": false, "original_url": true, "short_url": 1})
+                      //.toArray()
+                      // next(callback) => {Promise}
+                      // Get the next available `document` from the `cursor`,
+                      // returns 'null' if no more `documents` are available.
+                      .next()
+                      //  (err, doc) => {
+                      .then(
+                        (doc) => {
+                          console.log(`query on ${collection_Name} content: ${doc}`);
+                          //console.log(`collection ${collection_Name} content.length: ${docs.length}`);
+                          //console.log("collection_Name content:\n%j", docs);
+
+                          if (
+                            doc // doc != null
+                            //docs.length > 0
+                            //({}).hasOwnProperty("b")
+                            //doc.hasOwnProperty("original_url")
+                          ) {
+                            // found
+                            json_Response_Obj = {
+                              //[TypeError: Cannot read property 'original_url' of undefined]
+                              "original_url": (
+                                // source_Link
+                                doc.original_url
+                                //docs[0].original_url
+                              ),
+                              "short_url": doc.short_url,
+                              "message": "stored link retrieved"
+                            };
+                          } else {
+                            // has no previously stored `link`
+                            // not found => new
+                            // must be unique within `link` collection
+                            // otherwise generate error on insert
+                            // so, check for duplicate first / query mogoDB ?
+                            // or insert new(ly) generated link every time
+                            // until success ?
+                            short_Link = short_Link_Gen
+                              .get_Short_Link(
+                                collection_Size,
+                                source_Link
+                            );
+                            json_Response_Obj = {
+                              // ? mast contain query without allow ?
                               /*
-                              find(query) => {Cursor}
-                                Creates a `cursor` 
-                                for a `query` 
-                                that can be used 
-                                to iterate over `results` from MongoDB
-                                
-                              Cursor#event:readable
-                              so stream and
-                              can be piped
+                              {"protocol":"http:",
+                              "slashes":true,"auth":null,
+                              "host":"freecodecamp.com","port":null,
+                              "hostname":"freecodecamp.com","hash":null,
+                              "search":"?allow=true","query":{"allow":"true"},
+                              "pathname":"/news/",
+                              "path":"/news/?allow=true",
+                              "href":"http://freecodecamp.com/news/?allow=true"}
                               */
-                              //find().limit(1).next(function(err, doc){})
-                              collection
-                                .find(
-                                  {
-                                    //"short_url":"Alex"
-                                    // [ReferenceError: short_Link is not defined]
-                                    "original_url": source_Link
-                                  }
-                                 )
-                                // use index
-                                .hint('original_url')
-                                .limit(1)
-                                .project({"_id": false, "original_url": true, "short_url": 1})
-                                //.toArray()
-                                // is that a Promise ?
-                                .next(
-                                  (err, doc) => {
-                                /*.then(
-                                  (docs) => {*/
-                                    ////assert.equal(err, null);  
-                                    //assert.equal(1 || 0, docs.length);
-                                    if (err) {
-                                      console.log(`error on mingoDB find: ${err.message}`);
-                                    } else {
-                                      
-                                      console.log(`query on ${collection_Name} content: ${doc}`);
-                                      //console.log(`collection ${collection_Name} content.length: ${docs.length}`);  
-                                      //console.log("collection_Name content:\n%j", docs); 
-                                    
-                                      if (
-                                        //docs.length > 0
-                                        //({}).hasOwnProperty("b")
-                                        doc.hasOwnProperty("original_url")
-                                      ) {
-                                        // found
-                                        json_Response_Obj = { 
-                                          //[TypeError: Cannot read property 'original_url' of undefined]
-                                          "original_url": (
-                                            // source_Link
-                                            doc.original_url 
-                                            //docs[0].original_url 
-                                          ), 
-                                          "short_url": doc.short_url,
-                                          "message": "stored link retrieved"
-                                        };
-                                      } else {
-                                        // not found => new
-                                        // must be unique within `link` collection
-                                        // otherwise generate error on insert
-                                        // so, check for duplicate first / query mogoDB ?
-                                        // or insert new(ly) generated link every time
-                                        // until success ?
-                                        short_Link = short_Link_Gen
-                                          .get_Short_Link(
-                                            collection_Size,
-                                            source_Link
-                                        );
-                                        json_Response_Obj = { 
-                                          // ? mast contain query without allow ?
-                                          /*
-                                          {"protocol":"http:",                
-                                          "slashes":true,"auth":null,
-                                          "host":"freecodecamp.com","port":null,
-                                          "hostname":"freecodecamp.com","hash":null,
-                                          "search":"?allow=true","query":{"allow":"true"},
-                                          "pathname":"/news/",
-                                          "path":"/news/?allow=true",
-                                          "href":"http://freecodecamp.com/news/?allow=true"}
-                                          */
-                                          "original_url": (url_Obj.protocol + "//" + 
-                                                           url_Obj.host + url_Obj.pathname), //source_Link, 
-                                          "short_url": (request.socket.encrypted ? 'https://' : 'http://') +
-                                          request.headers.host + "/" + 
-                                          // may create duplicates
-                                          // additional check needed
-                                          short_Link,
-                                          "message": "new link stored"
-                                        }
-                                      };
-                                      document_Obj = {
-                                        "original_url": json_Response_Obj.original_url,
-                                        "short_url": short_Link
-                                      };
-
-                                      // not DRY
-                                      // to many copy->paste
-                                      collection
-                                        .insert(
-                                          document_Obj,
-                                          //JSON.stringify(document_Obj),
-                                          //json_Response_Obj,
-                                          (
-                                            err, 
-                                            result//.result.n 
-                                          ) => {
-                                            if (err) {
-                                              console.log('(collection / cursor).insert error:', err);
-                                              //throw err;
-                                              json_Response_Obj = {
-                                                "error": err.message
-                                              };
-                                              send_JSON_Response(
-                                                // obj -> writable stream
-                                                response,
-                                                json_Response_Obj,
-                                                // context 
-                                                'request.on "end" query.allow'  
-                                              );                                               
-                                              console
-                                                .log('request.on "end" query.allow response.end()');  
-
-                                            } else {
-                                              //console.log(data);
-                                              //console.log(JSON.stringify(document_Obj));
-                                              console.log('inserted document_Obj: %j', document_Obj);  
-                                              if (is_Debug) {
-                                                console.log(`result.result.n: ${result.result.n}`);
-                                                console.log('result.result: %j', result.result);
-                                              }
-                                              send_JSON_Response(
-                                                // obj -> writable stream
-                                                response,
-                                                json_Response_Obj,
-                                                // context 
-                                                'request.on "end" query.allow'  
-                                              );
-                                              console
-                                                .log('request.on "end" query.allow response.end()');  
-
-                                              /* finaly */
-                                              db.close();
-                                              console.log(`Close db after doc insert search`);
-                                            }
-                                          }
-                                      );
-                                    }
-
-                                    //db.close();
-                                  }
-                                )
-                                .catch(
-                                  (e) => {
-                                    console.log(e); 
-                                  }
-                              );
-                            } else {  
-                              // has no previously stored link
-                              //exports.get_Short_Link = short_Link_Generator; 
-                              short_Link = short_Link_Gen
-                                .get_Short_Link(
-                                  collection_Size,
-                                  source_Link
-                              );
-                              json_Response_Obj = { 
-                                // ? mast contain query without allow ?
-                                /*
-                                {"protocol":"http:",                
-                                "slashes":true,"auth":null,
-                                "host":"freecodecamp.com","port":null,
-                                "hostname":"freecodecamp.com","hash":null,
-                                "search":"?allow=true","query":{"allow":"true"},
-                                "pathname":"/news/",
-                                "path":"/news/?allow=true",
-                                "href":"http://freecodecamp.com/news/?allow=true"}
-                                */
-                                "original_url": (url_Obj.protocol + "//" + 
-                                                 url_Obj.host + url_Obj.pathname), //source_Link, 
-                                "short_url": (request.socket.encrypted ? 'https://' : 'http://') +
-                                request.headers.host + "/" + 
-                                short_Link,
-                                "message": "new link stored"
-                              };
-                              document_Obj = {
-                                "original_url": json_Response_Obj.original_url,
-                                "short_url": short_Link
-                              };
-                              
-                              collection
-                                .insert(
-                                  //document_Obj,
-                                  //JSON.stringify(document_Obj),
-                                  json_Response_Obj,
-                                  (
-                                    err, 
-                                    result//.result.n 
-                                  ) => {
-                                    if (err) {
-                                      console.log('(collection / cursor).insert error:', err);
-                                      //throw err;
-                                      json_Response_Obj = {
-                                        "error": err.message
-                                      };
-                                      send_JSON_Response(
-                                        // obj -> writable stream
-                                        response,
-                                        json_Response_Obj,
-                                        // context 
-                                        'request.on "end" query.allow'  
-                                      );
-                                      console
-                                        .log('request.on "end" query.allow response.end()');  
-                                      
-                                    } else {
-                                      //console.log(data);
-                                      //console.log(JSON.stringify(document_Obj));
-                                      console.log('inserted document_Obj: %j', json_Response_Obj);  
-                                      if (is_Debug) {
-                                        console.log(`result.result.n: ${result.result.n}`);
-                                        console.log('result.result: %j', result.result);
-                                      }
-                                      send_JSON_Response(
-                                        // obj -> writable stream
-                                        response,
-                                        json_Response_Obj,
-                                        // context 
-                                        'request.on "end" query.allow'  
-                                      );
-                                      console
-                                        .log('request.on "end" query.allow response.end()');  
-
-                                      /* finaly */
-                                      db.close();
-                                      console.log(`Close db after doc insert`);
-                                    }
-                                  }
-                              );
-                                                            
-                              //db.close();
+                              "original_url": (
+                                (url_Obj.protocol ? url_Obj.protocol + "//" : "") +
+                                (url_Obj.host ? url_Obj.host : "") +
+                                               url_Obj.pathname
+                                               ), //source_Link,
+                              "short_url": (request.socket.encrypted ? 'https://' : 'http://') +
+                              request.headers.host + "/" +
+                              // may create duplicates
+                              // additional check needed
+                              short_Link,
+                              "message": "new link stored"
                             }
-                          }
-                        )
-                        .catch((e) => {
-                          console.log(e); 
+                          };
+
+                          document_Obj = {
+                            "original_url": json_Response_Obj.original_url,
+                            "short_url": short_Link
+                          };
+
+                          // not DRY
+                          // to many copy->paste
+                          collection
+                            // insertOne(doc, options, callback) => {Promise}
+                            .insertOne(
+                              document_Obj
+                              //JSON.stringify(document_Obj)
+                            )
+                            .then(
+                              (result//.result.n
+                              ) => {
+                                //console.log(JSON.stringify(document_Obj));
+                                console.log('inserted document_Obj: %j', document_Obj);
+                                if (
+                                  true
+                                  //is_Debug
+                                ) {
+                                  console.log(`result.result.n: ${result.result.n}`);
+                                  console.log('result.result: %j', result.result);
+                                }
+                                send_JSON_Response(
+                                  // obj -> writable stream
+                                  response,
+                                  json_Response_Obj,
+                                  // context
+                                  'request.on "end" query.allow insertOne'
+                                );
+
+                                /* finaly */
+                                db.close();
+                                console.log(`Close db after link search & insert `);
+                              }
+                            )
+                            .catch(
+                              (err) => {
+                                console.log('(collection / cursor).insertOne error:', err.message);
+                                json_Response_Obj = {
+                                  "error": err.message,
+                                  "message": ".insertOne new:" + short_Link +
+                                  " catch error when query.allow"
+                                };
+                                send_JSON_Response(
+                                  // obj -> writable stream
+                                  response,
+                                  json_Response_Obj,
+                                  // context
+                                  'request.on "end" query.allow .insertOne catch error'
+                                );
+                              }
+                          );
+                        }
+                      )
+                      .catch((err) => {
+                          console.log('(collection / cursor).find error:', err.message);
+                          json_Response_Obj = {
+                            "error": err.message,
+                            "message": ".find:" + short_Link + " catch error when query.allow"
+                          };
+                          send_JSON_Response(
+                            // obj -> writable stream
+                            response,
+                            json_Response_Obj,
+                            // context
+                            'request.on "end" query.allow .find catch error'
+                          );
                         }
                       );                        
 
-                    }
                   }
+                )
+                .catch((err) => {
+                  console.log('mongo.db.connect error:', err.message, ";when query.allow");
+                  json_Response_Obj = {
+                    "error": err.message,
+                    "message": "mongo.db.connect catch error when query.allow"
+                  };
+                  send_JSON_Response(
+                    // obj -> writable stream
+                    response,
+                    json_Response_Obj,
+                    // context
+                    'request.on "end" query.allow mongo.db.connect catch error'
+                  );
+                }
               );
               
             } else {
