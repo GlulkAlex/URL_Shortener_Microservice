@@ -230,13 +230,18 @@ function send_JSON_Response(
 function get_Unique_Short_Link(
   db,// mongoDB obj
   collection, // mongoDB obj
-  source_Link// str
-){
+  callback// if not return Promise
+  //source_Link// str <- optional
+)/* => str ? must be promise */{
+  // new Promise((resolve, reject) => {resolve(thisPromiseSuccessReturnValue);});
   "use strict";
   /*
   1. Get `cursor` of all `documents` in `collection` => collection_Size
     (may be it is "lazy" until iterated & not consumes resources)
   2. short_Link_Size = short_Link_Gen.get_Short_Link_Length(collection_Size)
+  // $filter (aggregation)
+  // filter(filter) => {Cursor}
+  // Set the `cursor` `query`
   *3. filter `cursor` by 'short_Link_Size' <- optional
   4. filter `cursor` by 'short_Link' =>
     if found any get_Short_Link() & repeat 4.
@@ -244,57 +249,107 @@ function get_Unique_Short_Link(
   */
   // must be determined at least once per request
   var collection_Size = 0;
-  var short_Link = short_Link_Gen
-    .get_Short_Link(
-      // must be found first <- crucial / almost mandatory
-      collection_Size,
-      // redundant / not used
-      source_Link
-  );
+  var all_Docs_Cursor = collection
+    .find();
+  var short_Link = "";
+  var attempts_Counter = 0;
+  var is_Unique = false;
+  //var same_Link_Size_Docs_Cursor;
+  var same_Link_Size_Docs = [];
+  var item_Index;
+  var doc_Index;
+  var doc;
 
-  return short_Link;// str
-}
-// helper
-function insert_Link_To_DB(
-  db,
-  collection,
-  request,
-  response,
-  source_Link,
-  context_Message
-){
-  "use strict";
-
-  var collection_Size = 0;
-  var short_Link; //= "";
-  //var source_Link;
-  var json_Response_Obj = {};
-  var document_Obj = {};
-
-  if (context_Message) {
-  } else {
-    context_Message = "request.on 'end' query.allow insertOne";
-  }
-  collection
-    .find()
+  all_Docs_Cursor
     .count()
     .then((count) => {
         console.log('(collection / cursor).count:', count);
         collection_Size = count;
+
+        all_Docs_Cursor
+          .toArray()
+          .then((docs) => {
+            console.log('receive all links.docs');
+            while (
+              !(is_Unique) && (collection_Size > attempts_Counter)
+            ) {
+              short_Link = short_Link_Gen
+                .get_Short_Link(
+                  // must be found first <- crucial / almost mandatory
+                  collection_Size
+              );
+              is_Unique = true;
+              if (docs.length > 0) {
+              }
+              // order does not matter
+              for (doc_Index in docs) {
+                doc = docs[doc_Index];
+                if (doc.short_url == short_Link) {
+                  // fail, duplicated value => generate new one
+                  is_Unique = false;
+
+                  break;
+                }
+              }
+              attempts_Counter += 1;
+            }
+            // insert must be next
+            console.log('short_Link:', short_Link);
+            return short_Link;
+          }
+        )
+        .catch((err) => {
+            console.log('(collection / cursor).toArray error:', err.message);
+            return short_Link;
+          }
+        );
       }
     )
     .catch((err) => {
         console.log('(collection / cursor).count error:', err.message);
+        return short_Link;
       }
   );
 
-  short_Link = short_Link_Gen
-    .get_Short_Link(
-      // must be found first <- crucial / almost mandatory
-      collection_Size,
-      // redundant / not used
-      source_Link
+  // when this happened ?
+  //return short_Link;// str
+}
+// helper
+function insert_Link_To_DB(
+  db,// mongoDB obj
+  collection,// mongoDB obj
+  document_Obj,// dict
+  //request,// HTTP(S) obj <- ? optional ?
+  response,// HTTP(S) obj
+  json_Response_Obj,// dict
+  //host, //protocol + // + host_name
+  //source_Link,// str <- optional
+  context_Message// str <- optional
+  //is_Debug_Mode// bool <- optional
+)/* => null | void | Unit */{
+  "use strict";
+
+  var collection_Size = 0;
+  //var short_Link; // = "";// = document_Obj.short_Link
+  //var source_Link;
+  //var json_Response_Obj = {};
+  //var
+  /*** positional arguments ***/
+  /*** defaults ***/
+  //document_Obj = document_Obj ? document_Obj : {};
+  //json_Response_Obj = json_Response_Obj ? json_Response_Obj : {};
+  if (context_Message) {
+  } else {
+    context_Message = "request.on 'end' query.allow insertOne";
+  }
+  /*** defaults end ***/
+  /*
+  short_Link = get_Unique_Short_Link(
+    db,// mongoDB obj
+    collection, // mongoDB obj
+    source_Link// str
   );
+
   json_Response_Obj = {
     "original_url": (
       source_Link
@@ -311,56 +366,64 @@ function insert_Link_To_DB(
     "original_url": json_Response_Obj.original_url,
     "short_url": short_Link
   };
+  */
+  // guard
+  // currently fires before link was generated
+  if (document_Obj.short_url) {
+    collection
+      // insertOne(doc, options, callback) => {Promise}
+      .insertOne(
+        document_Obj
+        //JSON.stringify(document_Obj)
+      )
+      .then(
+        (result) => {//.result.n
+          //console.log(JSON.stringify(document_Obj));
+          console.log('inserted document_Obj: %j', document_Obj);
+          if (
+            true
+            //is_Debug
+          ) {
+            console.log(`result.result.n: ${result.result.n}`);
+            //console.log('result.result: %j', result.result);
+          }
+          send_JSON_Response(
+            // obj -> writable stream
+            response,
+            json_Response_Obj,
+            // context
+            context_Message
+          );
 
-  collection
-    // insertOne(doc, options, callback) => {Promise}
-    .insertOne(
-      document_Obj
-      //JSON.stringify(document_Obj)
-    )
-    .then(
-      (result//.result.n
-      ) => {
-        //console.log(JSON.stringify(document_Obj));
-        console.log('inserted document_Obj: %j', document_Obj);
-        if (
-          true
-          //is_Debug
-        ) {
-          console.log(`result.result.n: ${result.result.n}`);
-          //console.log('result.result: %j', result.result);
+          /* finaly */
+          db.close();
+          console.log(`Close db after link search & insert `);
         }
-        send_JSON_Response(
-          // obj -> writable stream
-          response,
-          json_Response_Obj,
-          // context
-          context_Message
-        );
+      )
+      .catch(
+        (err) => {
+          // "E11000 duplicate key error index:
+          // links.$original_url_text_short_url_text dup key: { : \"com\", : 0.625 }
+          console.log('(collection / cursor).insertOne error:', err.message);
+          json_Response_Obj = {
+            "error": err.message,
+            "message": "on links.insertOne{'short_url':" + document_Obj.short_url + //short_Link +
+            "'original_url':" + document_Obj.original_url +
+            " catch error when query.allow"
+          };
+          send_JSON_Response(
+            // obj -> writable stream
+            response,
+            json_Response_Obj,
+            // context
+            'request.on "end" query.allow .insertOne catch error'
+          );
+        }
+    );
+  } else {
+    console.log('undefined / empty document_Obj.short_url');
+  }
 
-        /* finaly */
-        db.close();
-        console.log(`Close db after link search & insert `);
-      }
-    )
-    .catch(
-      (err) => {
-        // "E11000 duplicate key error index:
-        console.log('(collection / cursor).insertOne error:', err.message);
-        json_Response_Obj = {
-          "error": err.message,
-          "message": ".insertOne new:" + short_Link +
-          " catch error when query.allow"
-        };
-        send_JSON_Response(
-          // obj -> writable stream
-          response,
-          json_Response_Obj,
-          // context
-          'request.on "end" query.allow .insertOne catch error'
-        );
-      }
-  );
 
   return //null;//side effect //void //Unit
 }
@@ -872,12 +935,9 @@ var http_Server = http.createServer(
                                   console.log('(collection / cursor).count error:', err.message);
                                 }
                             );
-                            short_Link = short_Link_Gen
-                              .get_Short_Link(
-                                // must be found first <- crucial / almost mandatory
-                                collection_Size,
-                                // redundant / not used
-                                source_Link
+                            short_Link = get_Unique_Short_Link(
+                              db,// mongoDB obj
+                              collection// mongoDB obj
                             );
                             json_Response_Obj = {
                               // ? mast contain query without allow ?
@@ -897,6 +957,7 @@ var http_Server = http.createServer(
                                 //url_Obj.pathname
                                 source_Link
                               ),
+                              // to show ful URL
                               "short_url": (request.socket.encrypted ? 'https://' : 'http://') +
                               request.headers.host + "/" +
                               // may create duplicates
@@ -908,60 +969,20 @@ var http_Server = http.createServer(
 
                           document_Obj = {
                             "original_url": json_Response_Obj.original_url,
+                            // save only necessary data
                             "short_url": short_Link
                           };
 
-                          // not DRY
-                          // to many copy->paste
-                          collection
-                            // insertOne(doc, options, callback) => {Promise}
-                            .insertOne(
-                              document_Obj
-                              //JSON.stringify(document_Obj)
-                            )
-                            .then(
-                              (result//.result.n
-                              ) => {
-                                //console.log(JSON.stringify(document_Obj));
-                                console.log('inserted document_Obj: %j', document_Obj);
-                                if (
-                                  true
-                                  //is_Debug
-                                ) {
-                                  console.log(`result.result.n: ${result.result.n}`);
-                                  console.log('result.result: %j', result.result);
-                                }
-                                send_JSON_Response(
-                                  // obj -> writable stream
-                                  response,
-                                  json_Response_Obj,
-                                  // context
-                                  'request.on "end" query.allow insertOne'
-                                );
-
-                                /* finaly */
-                                db.close();
-                                console.log(`Close db after link search & insert `);
-                              }
-                            )
-                            .catch(
-                              (err) => {
-                                // "E11000 duplicate key error index:
-                                console.log('(collection / cursor).insertOne error:', err.message);
-                                json_Response_Obj = {
-                                  "error": err.message,
-                                  "message": ".insertOne new:" + short_Link +
-                                  " catch error when query.allow"
-                                };
-                                send_JSON_Response(
-                                  // obj -> writable stream
-                                  response,
-                                  json_Response_Obj,
-                                  // context
-                                  'request.on "end" query.allow .insertOne catch error'
-                                );
-                              }
+                          insert_Link_To_DB(
+                            db,
+                            collection,
+                            document_Obj,// dict
+                            response,// HTTP(S) obj
+                            json_Response_Obj,
+                            //context_Message
+                            "res.on 'end' query.allow insertOne"
                           );
+
                         }
                       )
                       .catch((err) => {
@@ -1031,6 +1052,16 @@ var http_Server = http.createServer(
                 ) {
                   console.log(`Checking link: ${source_Link} in www`);
                   //Error: Protocol "https:" not supported. Expected "http:"
+                  // receive 400 Bad Request	 => The request cannot be fulfilled due to bad syntax
+                  // on some URL like: https://soundcloud.com/you/collection
+                  var options = {
+                    hostname: 'encrypted.google.com',
+                    port: 443,// <- default
+                    path: '/',
+                    method: 'GET'
+                  };
+                  // for
+                  // https.request(options, (res) => {});
                   //http
                   getter = url_Obj.protocol == "http:" ? http : https;
                   getter
@@ -1122,7 +1153,10 @@ var http_Server = http.createServer(
                                         json_Response_Obj = {
                                           "get_Response": res.statusCode,
                                           "source_Link": source_Link,
-                                          "short_url": docs[0].short_url,
+                                          // mast return full URL
+                                          "short_url": (request.socket.encrypted ? 'https://' : 'http://') +
+                                          request.headers.host + "/" +
+                                          docs[0].short_url,
                                           "message": "Short link found"
                                         };
                                         send_JSON_Response(
@@ -1148,12 +1182,33 @@ var http_Server = http.createServer(
                                           'res.on "end" cursor.find not found'  
                                         );
                                         */
+                                        short_Link = get_Unique_Short_Link(
+                                          db,// mongoDB obj
+                                          collection// mongoDB obj
+                                        );
+                                        json_Response_Obj = {
+                                          "original_url": (
+                                            source_Link
+                                          ),
+                                          // to show ful URL
+                                          "short_url": (request.socket.encrypted ? 'https://' : 'http://') +
+                                          request.headers.host + "/" +
+                                          short_Link,
+                                          "message": "new link stored"
+                                        };
+
+                                        document_Obj = {
+                                          "original_url": json_Response_Obj.original_url,
+                                          // save only necessary data
+                                          "short_url": short_Link
+                                        };
+
                                         insert_Link_To_DB(
                                           db,
                                           collection,
-                                          request,
-                                          response,
-                                          source_Link,
+                                          document_Obj,// dict
+                                          response,// HTTP(S) obj
+                                          json_Response_Obj,
                                           //context_Message
                                           "res.on 'end' cursor.find not found"
                                         );
@@ -1161,15 +1216,15 @@ var http_Server = http.createServer(
                                     }
                                   )
                                   .catch(
-                                    (e) => {
+                                    (err) => {
                                       // Unable to execute query: 
                                       // error processing query: 
                                       // ns=heroku_4mwk4dd8.links limit=1 skip=0
-                                      console.log(`catch error on mongoDB find cursor: ${e.message}`); 
+                                      console.log(`catch error on mongoDB find cursor: ${err.message}`);
                                       json_Response_Obj = {
                                         "get_Response": res.statusCode,
                                         "source_Link": source_Link,
-                                        "message": e.message
+                                        "message": err.message
                                       };
                                       send_JSON_Response(
                                         // obj -> writable stream
@@ -1183,12 +1238,12 @@ var http_Server = http.createServer(
                                 }
                               )
                               .catch(
-                                (e) => {
-                                  console.log(`catch error on mongoDB connect: ${e.message}`);
+                                (err) => {
+                                  console.log(`catch error on mongoDB connect: ${err.message}`);
                                   json_Response_Obj = {
                                     "get_Response": res.statusCode,
                                     "source_Link": source_Link,
-                                    "message": e.message                                    
+                                    "message": err.message
                                   };
                                   send_JSON_Response(
                                     // obj -> writable stream
@@ -1261,10 +1316,10 @@ var http_Server = http.createServer(
                       }
                   ).on(
                       'error', 
-                      (e) => {
-                        console.log(`Got error: ${e.message}`);
+                      (err) => {
+                        console.log(`Got error: ${err.message}`);
                         json_Response_Obj = {
-                          "error": e.message
+                          "error": err.message
                         };
                         send_JSON_Response(
                           // obj -> writable stream
