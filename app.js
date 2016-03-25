@@ -60,7 +60,7 @@ const collection_Name = (
 );
 // exports.get_Short_Link = short_Link_Generator;
 const short_Link_Gen = require('./short_link_generator.js');//.short_Link_Generator;
-// redundat here, has no practical use
+// redundant here, has no practical use
 const end_Points_List = [
   "/",
   "/new"//, // special entry point
@@ -156,7 +156,8 @@ var index_Template_Content_List = [
         '<h3>Example output:</h3>',        
           '<ul>',
             '<li>',
-              '<code>{ "original_url": "http://freecodecamp.com/news", "short_url": "https://api-url-shortener-microservice.herokuapp.com/QqZ" }</code>',
+              '<code>{ "original_url": "http://freecodecamp.com/news",',
+              '"short_url": "https://api-url-shortener-microservice.herokuapp.com/QqZ" }</code>',
             '</li>',
           '</ul>',      
       '</section>',        
@@ -213,7 +214,46 @@ function send_JSON_Response(
     
   //return ;//null; //void //Unit
 }
+/*
+// to find string of specific length
+// without dedicated 'length' field
+{
+  "short_url": {
+    // to ensure schema correctness
+    $exists: true,
+    $type: <BSON type number>2 | <String alias>"string"
+    "$regex": "/^[A-z]{3}$/"
+  }
+}
+*/
+// helper
+function get_Unique_Short_Link(
+  db,// mongoDB obj
+  collection, // mongoDB obj
+  source_Link// str
+){
+  "use strict";
+  /*
+  1. Get `cursor` of all `documents` in `collection` => collection_Size
+    (may be it is "lazy" until iterated & not consumes resources)
+  2. short_Link_Size = short_Link_Gen.get_Short_Link_Length(collection_Size)
+  *3. filter `cursor` by 'short_Link_Size' <- optional
+  4. filter `cursor` by 'short_Link' =>
+    if found any get_Short_Link() & repeat 4.
+    else => Done.
+  */
+  // must be determined at least once per request
+  var collection_Size = 0;
+  var short_Link = short_Link_Gen
+    .get_Short_Link(
+      // must be found first <- crucial / almost mandatory
+      collection_Size,
+      // redundant / not used
+      source_Link
+  );
 
+  return short_Link;// str
+}
 // helper
 function insert_Link_To_DB(
   db,

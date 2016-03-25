@@ -1,5 +1,25 @@
+//"use strict";
 // const circle = require('./circle.js');
 // require('./short_link_generator.js').short_Link_Generator;
+//const
+/* global */
+var choose_Options = function() {
+  "use strict";
+  var symbols_List = [];
+  // (122 + 1 - 97) * 2
+  var choose_Options_Size = 52;
+  var i;
+
+  for (i = 97; i < 122 + 1; i++){
+    symbols_List.push(String.fromCharCode(i))
+  }
+
+  return {
+    "symbols_List": symbols_List,
+    "choose_Options_Size": choose_Options_Size
+  };
+}();
+
 function* random_Boolean_Gen(){
   while(true){  
     yield Math.random() >= 0.5;
@@ -22,14 +42,23 @@ function random_Integer(
   );
 }
 
+function get_Short_Link_Length(
+  collection_Size, // int
+  choose_Options_Size // int
+) /* => int */{
+  return Math.ceil(
+    Math.log(collection_Size) / Math.log(choose_Options_Size)
+  );
+}
+
 function short_Link_Generator(
-  collection_Size,
-  source_Link,
-  is_Debug_Mode 
-){
+  collection_Size,// int
+  source_Link,// str
+  is_Debug_Mode// bool
+)/* => str*/{
   "use strict";
       
-  var symbols_List = [];
+  //var symbols_List = [];
   var short_Link_Length = 1;    
   // "a".charCodeAt(0) == 97
   // "z".charCodeAt(0) == 122    
@@ -37,7 +66,7 @@ function short_Link_Generator(
   var i;
   var result = "";
   var current_Char; 
-  var choose_Options_Size = 52;    
+  //var choose_Options_Size = 52;
       
   // preprocessing / initializing
   if (
@@ -66,17 +95,20 @@ function short_Link_Generator(
     log_a(x) = ln(x) / ln(a)
     */
     // Math.log(x)	Returns the natural logarithm (base E) of x
-    short_Link_Length = Math.ceil(
-      Math.log(collection_Size) / Math.log(choose_Options_Size)
-    );  
+    short_Link_Length = get_Short_Link_Length(
+      collection_Size, // int
+      choose_Options.choose_Options_Size // int
+    );
   }    
   if (is_Debug_Mode == undefined){
     is_Debug_Mode = process.argv[2] || false; 
     //console.log("is_Debug_Mode:", is_Debug_Mode);  
-  }    
+  }
+  /*
   for (i = 97; i < 122 + 1; i++){
     symbols_List.push(String.fromCharCode(i))  
-  } 
+  }
+  */
   if (is_Debug_Mode){
     console.log("symbols_List:", JSON.stringify(symbols_List));    
   }
@@ -84,7 +116,7 @@ function short_Link_Generator(
   // a random number between 0 (inclusive),  and 1 (exclusive)   
   for (i = 0; i < short_Link_Length; i++){
     // must be from (0) to (122-97) == (26) total length
-    current_Char = symbols_List[random_Integer(0, 25)];  
+    current_Char = choose_Options.symbols_List[random_Integer(0, 25)];
     // upper / lower case  
     if (random_Boolean()){
       result += current_Char;//.toLowerCase();  
@@ -102,6 +134,8 @@ exports.get_Short_Link = short_Link_Generator;
 exports.rand_Bool = random_Boolean;
 exports.rand_Bool_Gen = random_Boolean_Gen(); 
 exports.rand_Int = random_Integer;
+exports.get_Short_Link_Length = get_Short_Link_Length;
+exports.choose_Options = choose_Options;
 //exports.test = (s) => "testing " + s;
 // module.exports overrides previous exports
 //module.exports = (s) => "testing " + s;
