@@ -14,11 +14,15 @@ const is_Debug_Mode = (
 for
 https://api-url-shortener-microservice.herokuapp.com/
 */
+/*** Node.js modules ***/
 const http = require('http');
 const https = require('https');
+//var express = require('express');
+//var app = express();
 //const fs = require('fs');  
 //const path = require('path');
 const url = require('url');
+
 const port_Number = (
   //process.argv[3] || 
   process.env.PORT || 
@@ -58,8 +62,10 @@ const collection_Name = (
   //"docs" // <- for tests only
   "links"  
 );
+/*** application modules ***/
 // exports.get_Short_Link = short_Link_Generator;
 const short_Link_Gen = require('./short_link_generator.js');//.short_Link_Generator;
+
 // redundant here, has no practical use
 const end_Points_List = [
   "/",
@@ -266,13 +272,16 @@ function get_Unique_Short_Link(
         console.log('(collection / cursor).count:', count);
         collection_Size = count;
 
+        //if (collection_Size > 0) {}
         all_Docs_Cursor
           .toArray()
           .then((docs) => {
+            var post_Condition = true;// executed at least once
             console.log('receive all links.docs');
             while (
-              !(is_Unique) && (collection_Size > attempts_Counter)
+              post_Condition
             ) {
+              // must be generated at least once
               short_Link = short_Link_Gen
                 .get_Short_Link(
                   // must be found first <- crucial / almost mandatory
@@ -293,21 +302,26 @@ function get_Unique_Short_Link(
               }
               attempts_Counter += 1;
             }
+            post_Condition = !(is_Unique) && (collection_Size > attempts_Counter);
             // insert must be next
             console.log('short_Link:', short_Link);
-            return short_Link;
+            // Promise.resolve(thenable);
+            return Promise
+              .resolve(
+                {
+                  then: (onFulfill, onReject) => { onFulfill(short_Link);}});
           }
         )
         .catch((err) => {
-            console.log('(collection / cursor).toArray error:', err.message);
-            return short_Link;
+            console.log('(collection / cursor).toArray error:', err.stack);
+            //return short_Link;
           }
         );
       }
     )
     .catch((err) => {
-        console.log('(collection / cursor).count error:', err.message);
-        return short_Link;
+        console.log('(collection / cursor).count error:', err.stack);
+        //return short_Link;
       }
   );
 
@@ -370,6 +384,7 @@ function insert_Link_To_DB(
   // guard
   // currently fires before link was generated
   if (document_Obj.short_url) {
+    console.log('short_url:', short_url, "provided");
     collection
       // insertOne(doc, options, callback) => {Promise}
       .insertOne(
@@ -404,7 +419,7 @@ function insert_Link_To_DB(
         (err) => {
           // "E11000 duplicate key error index:
           // links.$original_url_text_short_url_text dup key: { : \"com\", : 0.625 }
-          console.log('(collection / cursor).insertOne error:', err.message);
+          console.log('(collection / cursor).insertOne error:', err.stack);
           json_Response_Obj = {
             "error": err.message,
             "message": "on links.insertOne{'short_url':" + document_Obj.short_url + //short_Link +
@@ -620,7 +635,9 @@ var http_Server = http.createServer(
       }
     );
     */    
-    request.on(
+    request
+    //.on(
+    .once(
       'end', 
       () => {
         /*
@@ -923,6 +940,7 @@ var http_Server = http.createServer(
                             // so, check for duplicate first / query mogoDB ?
                             // or insert new(ly) generated link every time
                             // until success ?
+                            /*
                             collection
                               .find()
                               .count()
@@ -932,61 +950,66 @@ var http_Server = http.createServer(
                                 }
                               )
                               .catch((err) => {
-                                  console.log('(collection / cursor).count error:', err.message);
+                                  console.log('(collection / cursor).count error:', err.stack);
                                 }
                             );
+                            */
                             short_Link = get_Unique_Short_Link(
                               db,// mongoDB obj
                               collection// mongoDB obj
                             );
-                            json_Response_Obj = {
-                              // ? mast contain query without allow ?
-                              /*
-                              {"protocol":"http:",
-                              "slashes":true,"auth":null,
-                              "host":"freecodecamp.com","port":null,
-                              "hostname":"freecodecamp.com","hash":null,
-                              "search":"?allow=true","query":{"allow":"true"},
-                              "pathname":"/news/",
-                              "path":"/news/?allow=true",
-                              "href":"http://freecodecamp.com/news/?allow=true"}
-                              */
-                              "original_url": (
-                                //(url_Obj.protocol ? url_Obj.protocol + "//" : "") +
-                                //(url_Obj.host ? url_Obj.host : "") +
-                                //url_Obj.pathname
-                                source_Link
-                              ),
-                              // to show ful URL
-                              "short_url": (request.socket.encrypted ? 'https://' : 'http://') +
-                              request.headers.host + "/" +
-                              // may create duplicates
-                              // additional check needed
-                              short_Link,
-                              "message": "new link stored"
-                            }
-                          };
+                            short_Link
+                              .then((source_Link) => {
+                                json_Response_Obj = {
+                                  // ? mast contain query without allow ?
+                                  /*
+                                  {"protocol":"http:",
+                                  "slashes":true,"auth":null,
+                                  "host":"freecodecamp.com","port":null,
+                                  "hostname":"freecodecamp.com","hash":null,
+                                  "search":"?allow=true","query":{"allow":"true"},
+                                  "pathname":"/news/",
+                                  "path":"/news/?allow=true",
+                                  "href":"http://freecodecamp.com/news/?allow=true"}
+                                  */
+                                  "original_url": (
+                                    //(url_Obj.protocol ? url_Obj.protocol + "//" : "") +
+                                    //(url_Obj.host ? url_Obj.host : "") +
+                                    //url_Obj.pathname
+                                    source_Link
+                                  ),
+                                  // to show ful URL
+                                  "short_url": (request.socket.encrypted ? 'https://' : 'http://') +
+                                  request.headers.host + "/" +
+                                  // may create duplicates
+                                  // additional check needed
+                                  short_Link,
+                                  "message": "new link stored"
+                                }
 
-                          document_Obj = {
-                            "original_url": json_Response_Obj.original_url,
-                            // save only necessary data
-                            "short_url": short_Link
-                          };
+                                document_Obj = {
+                                  "original_url": json_Response_Obj.original_url,
+                                  // save only necessary data
+                                  "short_url": short_Link
+                                };
 
-                          insert_Link_To_DB(
-                            db,
-                            collection,
-                            document_Obj,// dict
-                            response,// HTTP(S) obj
-                            json_Response_Obj,
-                            //context_Message
-                            "res.on 'end' query.allow insertOne"
-                          );
+                                insert_Link_To_DB(
+                                  db,
+                                  collection,
+                                  document_Obj,// dict
+                                  response,// HTTP(S) obj
+                                  json_Response_Obj,
+                                  //context_Message
+                                  "res.on 'end' query.allow insertOne"
+                                );
+                              }
+                            );
+                          };
 
                         }
                       )
                       .catch((err) => {
-                          console.log('(collection / cursor).find error:', err.message);
+                          console.log('(collection / cursor).find error:', err.stack);
                           json_Response_Obj = {
                             "error": err.message,
                             "message": ".find:" + short_Link + " catch error when query.allow"
@@ -1105,7 +1128,8 @@ var http_Server = http.createServer(
                         /**/
                         //reader
                         res
-                          .on(
+                          //.on(
+                          .once(
                             'end', 
                             () => {
                               console.log(`Checking MongoDB for stored source_Link: ${source_Link}`);
@@ -1220,7 +1244,7 @@ var http_Server = http.createServer(
                                       // Unable to execute query: 
                                       // error processing query: 
                                       // ns=heroku_4mwk4dd8.links limit=1 skip=0
-                                      console.log(`catch error on mongoDB find cursor: ${err.message}`);
+                                      console.log(`catch error on mongoDB find cursor: ${err.stack}`);
                                       json_Response_Obj = {
                                         "get_Response": res.statusCode,
                                         "source_Link": source_Link,
@@ -1239,7 +1263,7 @@ var http_Server = http.createServer(
                               )
                               .catch(
                                 (err) => {
-                                  console.log(`catch error on mongoDB connect: ${err.message}`);
+                                  console.log(`catch error on mongoDB connect: ${err.stack}`);
                                   json_Response_Obj = {
                                     "get_Response": res.statusCode,
                                     "source_Link": source_Link,
@@ -1572,7 +1596,7 @@ var http_Server = http.createServer(
                         //catch error on mongoDB cursor.next: cursor is exhausted
                         //catch error on mongoDB cursor.next: 
                         // Cannot read property 'hasOwnProperty' of null
-                        console.log(`catch error on mongoDB cursor.next: ${err.message}`);
+                        console.log(`catch error on mongoDB cursor.next: ${err.stack}`);
                         json_Response_Obj = {
                           "message": 'searching for original link in db ...',
                           "error": err.message
@@ -1589,7 +1613,7 @@ var http_Server = http.createServer(
                     })
                     .catch(
                       (err) => {
-                        console.log(`catch error on mongoDB cursor.hasNext: ${err.message}`);
+                        console.log(`catch error on mongoDB cursor.hasNext: ${err.stack}`);
                         json_Response_Obj = {
                           "message": 'searching for original link in db ...',
                           "error": err.message
@@ -1784,11 +1808,22 @@ http_Server
 http_Server
   .on(
     'error', 
-    (e) => {    
+    (err) => {
       console.log('http_Server on "error"');  
-      console.error(`e.code: ${e.code}, e.message: ${e.message}`);
+      console.error(`err.code: ${err.code}, err.message: ${err.message}`);
     }
 );
+// error.stack
+// Returns a string
+// describing the point in the code
+// at which the Error was instantiated.
+process
+.on(
+  'unhandledRejection',
+  (reason, p) => {
+    console.log("Unhandled Rejection at: Promise ", p, " reason: ", reason);
+    // application specific logging, throwing an error, or other logic here
+});
 /*##########################################################################*/
 /* unit test */
 // Start a UNIX socket server 
@@ -1806,3 +1841,6 @@ http_Server
       //console.log('http_Server listening on port ' + port + '...');
     }
 );
+// provide both HTTP and HTTPS versions of 'app' with the same code base
+//http.createServer(app).listen(80);
+//https.createServer(options, app).listen(443);

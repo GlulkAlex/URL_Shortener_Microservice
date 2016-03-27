@@ -8,6 +8,7 @@
     "start": "node app.js"
   },
   "dependencies": {
+    "express": "4.13.4",
     "mongodb": "2.1.7"
   },
   "engines": {
