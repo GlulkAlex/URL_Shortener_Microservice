@@ -1,4 +1,5 @@
 "use strict";
+// TODO create an alternative start file: main.js using express
 /*
 .env
 MONGO_URI=mongodb://localhost:27017/clementinejs
@@ -65,6 +66,7 @@ const collection_Name = (
 /*** application modules ***/
 // exports.get_Short_Link = short_Link_Generator;
 const short_Link_Gen = require('./short_link_generator.js');//.short_Link_Generator;
+const host_Name_Validator = require('./host_Name_Validator.js');
 
 // redundant here, has no practical use
 const end_Points_List = [
@@ -1110,8 +1112,9 @@ var http_Server = http.createServer(
               ) {
                 console.log(`Checking url_Obj.host: ${url_Obj.host}`);
                 if (
-                  // hyphens must be OK
-                  /^([^\W\s]+)((\.)([^\W\s]+))*((\.)([^\W\s]+))$/g.test(url_Obj.host) 
+                  // hyphens '-' must be OK within (not leading / trailing), but underscores '_' not
+                  ///^([^\W\s]+)((\.)([^\W\s]+))*((\.)([^\W\s]+))$/g.test(url_Obj.host)
+                  host_Name_Validator.is_Host_Name_Valid(url_Obj.host)
                 ) {
                   console.log(`Checking link: ${source_Link} in www`);
                   //Error: Protocol "https:" not supported. Expected "http:"
