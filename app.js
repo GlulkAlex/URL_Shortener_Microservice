@@ -233,6 +233,58 @@ function send_JSON_Response(
 }
 */
 // helper
+function generate_Unique_Short_Link(
+  collection_Size, //int
+  docs//list of obj
+) /* => thenable Promise => (str | error)*/{
+  var post_Condition = true;// executed at least once
+  var is_Unique = true;
+  var short_Link = "";
+  var attempts_Counter = 0;
+  var item_Index;
+  var doc_Index;
+  var doc;
+  console.log('receive all docs in links.');
+
+  while (
+    post_Condition
+  ) {
+    // must be generated at least once
+    short_Link = short_Link_Gen
+      .get_Short_Link(
+        // must be found first <- crucial / almost mandatory
+        collection_Size
+    );
+    is_Unique = true;
+    if (docs.length > 0) {
+    }
+    // order does not matter
+    for (doc_Index in docs) {
+      doc = docs[doc_Index];
+      if (doc.short_url == short_Link) {
+        // fail, duplicated value => generate new one
+        is_Unique = false;
+
+        break;
+      }
+    }
+    attempts_Counter += 1;
+  }
+  post_Condition = !(is_Unique) && (collection_Size > attempts_Counter);
+  // insert must be next
+  console.log('Unique short_Link:', short_Link);
+  // Promise.resolve(thenable);
+  return Promise
+    .resolve(
+      short_Link
+      //{
+      //  then: (onFulfill, onReject) => {
+      //    onFulfill(short_Link);
+      //  }
+      //}
+    );
+}
+// helper
 function get_Unique_Short_Link(
   db,// mongoDB obj
   collection, // mongoDB obj
@@ -254,65 +306,49 @@ function get_Unique_Short_Link(
     else => Done.
   */
   // must be determined at least once per request
-  var collection_Size = 0;
-  var all_Docs_Cursor = collection
-    .find();
-  var short_Link = "";
-  var attempts_Counter = 0;
-  var is_Unique = false;
+  //var collection_Size = 0;
+  //var all_Docs_Cursor = collection
+  //  .find();
+  var all_Docs_Cursor_List = collection
+    //all_Docs_Cursor
+    .find()
+    .toArray();
+  var cursor_Docs_Count = collection
+    //all_Docs_Cursor
+    .find()
+    .count();
+  //var short_Link = "";
+  //var attempts_Counter = 0;
+  //var is_Unique = false;
   //var same_Link_Size_Docs_Cursor;
   var same_Link_Size_Docs = [];
-  var item_Index;
-  var doc_Index;
-  var doc;
+  //var item_Index;
+  //var doc_Index;
+  //var doc;
 
-  all_Docs_Cursor
-    .count()
+  return Promise
+    .resolve(
+  cursor_Docs_Count
+    //.count()
     .then((count) => {
         console.log('(collection / cursor).count:', count);
-        collection_Size = count;
+        //collection_Size = count;
 
         //if (collection_Size > 0) {}
-        all_Docs_Cursor
-          .toArray()
+        //all_Docs_Cursor.rewind();
+        //all_Docs_Cursor
+          //.toArray()
+        all_Docs_Cursor_List
           .then((docs) => {
-            var post_Condition = true;// executed at least once
-            console.log('receive all links.docs');
-            while (
-              post_Condition
-            ) {
-              // must be generated at least once
-              short_Link = short_Link_Gen
-                .get_Short_Link(
-                  // must be found first <- crucial / almost mandatory
-                  collection_Size
+              generate_Unique_Short_Link(
+                //collection_Size, //int
+                count,
+                docs//list of obj
               );
-              is_Unique = true;
-              if (docs.length > 0) {
-              }
-              // order does not matter
-              for (doc_Index in docs) {
-                doc = docs[doc_Index];
-                if (doc.short_url == short_Link) {
-                  // fail, duplicated value => generate new one
-                  is_Unique = false;
-
-                  break;
-                }
-              }
-              attempts_Counter += 1;
             }
-            post_Condition = !(is_Unique) && (collection_Size > attempts_Counter);
-            // insert must be next
-            console.log('short_Link:', short_Link);
-            // Promise.resolve(thenable);
-            return Promise
-              .resolve(
-                {
-                  then: (onFulfill, onReject) => { onFulfill(short_Link);}});
-          }
         )
         .catch((err) => {
+            // (collection / cursor).toArray error: ReferenceError: doc_Index is not defined
             console.log('(collection / cursor).toArray error:', err.stack);
             //return short_Link;
           }
@@ -323,8 +359,8 @@ function get_Unique_Short_Link(
         console.log('(collection / cursor).count error:', err.stack);
         //return short_Link;
       }
+  )//;
   );
-
   // when this happened ?
   //return short_Link;// str
 }
@@ -954,12 +990,14 @@ var http_Server = http.createServer(
                                 }
                             );
                             */
-                            short_Link = get_Unique_Short_Link(
+                            //short_Link =
+                            get_Unique_Short_Link(
                               db,// mongoDB obj
                               collection// mongoDB obj
-                            );
-                            short_Link
-                              .then((source_Link) => {
+                            )//;
+                            //short_Link
+                              .then((short_Link) => {
+                                console.log('then new stored short_Link for response', short_Link);
                                 json_Response_Obj = {
                                   // ? mast contain query without allow ?
                                   /*
@@ -1009,6 +1047,7 @@ var http_Server = http.createServer(
                         }
                       )
                       .catch((err) => {
+                          //(collection / cursor).find error: TypeError: Cannot read property 'then' of undefined
                           console.log('(collection / cursor).find error:', err.stack);
                           json_Response_Obj = {
                             "error": err.message,
@@ -1071,6 +1110,7 @@ var http_Server = http.createServer(
               ) {
                 console.log(`Checking url_Obj.host: ${url_Obj.host}`);
                 if (
+                  // hyphens must be OK
                   /^([^\W\s]+)((\.)([^\W\s]+))*((\.)([^\W\s]+))$/g.test(url_Obj.host) 
                 ) {
                   console.log(`Checking link: ${source_Link} in www`);
@@ -1127,6 +1167,11 @@ var http_Server = http.createServer(
                         */
                         /**/
                         //reader
+                        res
+                          .on(
+                            'error',
+                            (err) => {console.log(`res(response) from www error: ${err.stack}`);}
+                        );
                         res
                           //.on(
                           .once(
@@ -1206,35 +1251,39 @@ var http_Server = http.createServer(
                                           'res.on "end" cursor.find not found'  
                                         );
                                         */
-                                        short_Link = get_Unique_Short_Link(
+                                        //short_Link =
+                                        get_Unique_Short_Link(
                                           db,// mongoDB obj
                                           collection// mongoDB obj
-                                        );
-                                        json_Response_Obj = {
-                                          "original_url": (
-                                            source_Link
-                                          ),
-                                          // to show ful URL
-                                          "short_url": (request.socket.encrypted ? 'https://' : 'http://') +
-                                          request.headers.host + "/" +
-                                          short_Link,
-                                          "message": "new link stored"
-                                        };
+                                        )//;
+                                        .then((short_Link) => {
+                                            json_Response_Obj = {
+                                              "original_url": (
+                                                source_Link
+                                              ),
+                                              // to show ful URL
+                                              "short_url": (request.socket.encrypted ? 'https://' : 'http://') +
+                                              request.headers.host + "/" +
+                                              short_Link,
+                                              "message": "new link stored"
+                                            };
 
-                                        document_Obj = {
-                                          "original_url": json_Response_Obj.original_url,
-                                          // save only necessary data
-                                          "short_url": short_Link
-                                        };
+                                            document_Obj = {
+                                              "original_url": json_Response_Obj.original_url,
+                                              // save only necessary data
+                                              "short_url": short_Link
+                                            };
 
-                                        insert_Link_To_DB(
-                                          db,
-                                          collection,
-                                          document_Obj,// dict
-                                          response,// HTTP(S) obj
-                                          json_Response_Obj,
-                                          //context_Message
-                                          "res.on 'end' cursor.find not found"
+                                            insert_Link_To_DB(
+                                              db,
+                                              collection,
+                                              document_Obj,// dict
+                                              response,// HTTP(S) obj
+                                              json_Response_Obj,
+                                              //context_Message
+                                              "res.on 'end' cursor.find not found"
+                                            );
+                                          }
                                         );
                                       }
                                     }
@@ -1341,7 +1390,7 @@ var http_Server = http.createServer(
                   ).on(
                       'error', 
                       (err) => {
-                        console.log(`Got error: ${err.message}`);
+                        console.log(`Got error: ${err.stack}`);
                         json_Response_Obj = {
                           "error": err.message
                         };
