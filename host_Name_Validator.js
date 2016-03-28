@@ -152,7 +152,8 @@ function validate_Host_Name(
               ) {
                 is_Valid = false;
 
-                break;
+                //break;
+                return is_Valid;
               }
               if (
                 (label.charCodeAt(char_Index) >= 97 && label.charCodeAt(char_Index) <= 122) ||
@@ -163,23 +164,28 @@ function validate_Host_Name(
               } else {
                 is_Valid = false;
 
-                break;
+                //break;
+                return is_Valid;
               }
             }
           }
 
           if (!(is_Valid)) {
 
-            break;
+            //break;
+            return is_Valid;
           }
         } else {
           is_Valid = false;
 
-          break;
+          //break;
+          return is_Valid;
         }
       }
     } else {
       is_Valid = false;
+
+      return is_Valid;
     }
 
     //is_Valid = reg_Ex.test(host_Name);
