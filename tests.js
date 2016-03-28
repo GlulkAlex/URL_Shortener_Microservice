@@ -2,6 +2,9 @@
 /*** Node.js modules ***/
 // a core module
 const assert = require('assert');
+// npm module
+//var
+const MongoClient = require('mongodb').MongoClient;
 /*** Node.js modules end ***/
 
 /*** config ***/
@@ -22,6 +25,8 @@ const mongoLab_URI = (
 
 /*** application modules ***/
 const host_Name_Validator = require('./host_Name_Validator.js');
+//.get_Short_Link()
+const link_Gen = require('./short_link_generator.js');//.short_Link_Generator;
 //generate_Unique_Short_Link
 // started hole app, not just import designated functions
 //const db_Helpers = require('./app.js');
@@ -30,40 +35,126 @@ const db_Helpers = require('./db_Helpers.js');
 /*** application modules end ***/
 
 /*** helpers ***/
+// for
+// col.insertMany([{a:1}, {a:2}], function(err, r) {
+// r.insertedCount
 function make_Links_Documents(
   size//:int
-)/* => list */ {
+)/* => list of obj */ {
   "use strict";
 
   var result;
   var results = [];
+  var loop_Counter = 0;
 
-  return;
+  for (;loop_Counter < size;loop_Counter++){
+    //{"original_url":"original_Link_1","short_url":""}
+    // ??? WTF ???
+    // TODO : test short_Link_Generator for ''
+    results.push(
+      {
+        "original_url": "original_Link_" + loop_Counter,
+        "short_url": link_Gen.get_Short_Link(loop_Counter)
+      }
+    );
+  }
+
+  return results;
 }
 
 function clear_Links(mongoLab_URI, collection_Name){
-//var
-const MongoClient = require('mongodb').MongoClient;
+  "use strict";
 
-var connection = MongoClient.connect(mongoLab_URI);//, function(err, db) {
-collection_Name = 'tests';
+  var connection = MongoClient.connect(mongoLab_URI);//, function(err, db) {
+  collection_Name = collection_Name ? collection_Name : 'tests';
 
-connection
-  .then((db) => {
-    // Create a collection we want to drop later
-    var collection = db.collection(collection_Name');
+  //db.collections(function(err, collections) {
+  // ? Promise <pending> ?
+  return Promise.resolve(
+    connection
+      .then((db) => {
+        // Create a collection we want to drop later
+        // Returns:
+        // the new Collection instance if not in strict mode
+        //var collection = db.collection(collection_Name);
+        //var collection =
+        db.collection(
+          collection_Name,
+          {strict: true},
+          (err, col) => {
+            if (err) {
+              console.log("collection:", collection_Name, " not exist in db");
+              console.log("nothing to drop from db");
+              db.close();
 
-    // Drop the collection
-    var drop = collection.drop();//function(err, reply) {
+              //return undefined;
+            } else {
+              console.log("collection:", collection_Name, " exist in db");
+              console.log("collection:", collection_Name, " about to drop from db");
+              // Drop the collection
+              //var drop = collection.drop();//function(err, reply) {
+              var drop = db.dropCollection(collection_Name);//, function(err, result) {
 
-    drop
-      .then((reply) => {
-        console.log("drop reply is:", reply);
-        // Let's close the db
-        db.close();
-      });
+              drop
+                .then((reply) => {
+                  // Verify that the collection is gone
+                  //db.listCollections({name:collection_Name}).toArray().then((names) => {
+                  //  assert.equal(0, names.length);
+                  console.log("drop reply is:", reply);
+                  // Let's close the db
+                  db.close();
+                }
+                ).catch((err) => {
+                  // MongoError: ns not found
+                  console.log("drop err:", err.stack);}
+              );
 
-  });
+              //return col;
+            }
+          }
+        );
+
+      }
+      ).catch((err) => {console.log("connection err:", err.stack);}
+    )
+  );
+};
+
+function add_Docs(
+  documents,//:list of obj
+  collection_Name//:str
+)/* => Promise */{
+  "use strict";
+
+  var connection = MongoClient.connect(mongoLab_URI);//, function(err, db) {
+  collection_Name = collection_Name ? collection_Name : 'tests';
+
+  //db.collections(function(err, collections) {
+  // ? Promise <pending> ?
+  return Promise.resolve(
+    connection
+      .then((db) => {
+        // Create a collection we want to drop later
+        // Returns:
+        // the new Collection instance if not in strict mode
+        var collection = db.collection(collection_Name);
+
+        collection
+          .insertMany(documents)//, function(err, r) {
+          .then((result) => {
+              console.log("added:", result.insertedCount, "documents to ", collection_Name);
+              // Let's close the db
+              db.close();
+            }
+            ).catch((err) => {
+              // MongoError: ns not found
+              console.log("insertMany err:", err.stack);}
+          );
+
+      }
+      ).catch((err) => {console.log("connection err:", err.stack);}
+    )
+  );
 };
 /*** helpers end ***/
 
@@ -92,9 +183,9 @@ var test_1 = function(
 
   return results;
 }
-// TODO 1.drop collection
-// TODO 2.dummy data generator
-// TODO 3.insert generated data
+// DONE 1.drop collection
+// DONE 2.dummy data generator
+// DONE 3.insert generated data
 var test_2 = function(
   //urls//:list
 ) {
@@ -104,6 +195,22 @@ var test_2 = function(
   var results = [];
 
   console.log("mongoLab_URI is:", mongoLab_URI);
+  results = make_Links_Documents(7);
+  console.log("results: %j", results);
+  //"tests"
+  var clear = clear_Links(mongoLab_URI, "tests");
+  console.log("typeof clear:", (typeof clear));
+  console.log("clear instanceof Promise:", (clear instanceof Promise));
+
+  clear
+    .then(() => {
+      add_Docs(
+        results,//:list of obj
+        "tests"//:str
+      );
+    }
+    ).catch((err) => {console.log("clear.then err:", err.stack);}
+  );
 
 
   return results;
