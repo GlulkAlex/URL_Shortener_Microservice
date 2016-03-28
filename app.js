@@ -149,12 +149,15 @@ var index_Template_Content_List = [
         '<h3>Example usage (live demo):</h3>',        
           '<ul>',
             '<li>',
-              '<a href="https://api-url-shortener-microservice.herokuapp.com/new/https://github.com/GlulkAlex/URL_Shortener_Microservice">',
+              '<a href="https://api-url-shortener-microservice.herokuapp.com/',
+              'new/https://github.com/GlulkAlex/URL_Shortener_Microservice">',
                 'https://api-url-shortener-microservice.herokuapp.com/new/&lt;valid URL&gt;</a>', 
             '</li>',
             '<li>',
-              '<a href="https://api-url-shortener-microservice.herokuapp.com/new/htps://github./GlulkAlex/URL_Shortener_Microservice?allow=true">',
-                'https://api-url-shortener-microservice.herokuapp.com/new/&lt;<b>invalid</b> URL&gt;?allow=true</a>', 
+              '<a href="https://api-url-shortener-microservice.herokuapp.com/',
+              'new/htps://github./GlulkAlex/URL_Shortener_Microservice?allow=true">',
+                'https://api-url-shortener-microservice.herokuapp.com/',
+                'new/&lt;<b>invalid</b> URL&gt;?allow=true</a>',
             '</li>',
             '<li>',
               '<a href="https://api-url-shortener-microservice.herokuapp.com/cnn">',
@@ -237,7 +240,8 @@ function send_JSON_Response(
 // helper
 function generate_Unique_Short_Link(
   collection_Size, //int
-  docs//list of obj
+  docs,//list of obj
+  callback// <- optional
 ) /* => thenable Promise => (str | error)*/{
   var post_Condition = true;// executed at least once
   var is_Unique = true;
@@ -1876,6 +1880,10 @@ process
     console.log("Unhandled Rejection at: Promise ", p, " reason: ", reason);
     // application specific logging, throwing an error, or other logic here
 });
+/*##########################################################################*/
+//exports.assert = assert;
+exports.send_JSON_Response = send_JSON_Response;
+exports.generate_Unique_Short_Link = generate_Unique_Short_Link;
 /*##########################################################################*/
 /* unit test */
 // Start a UNIX socket server 

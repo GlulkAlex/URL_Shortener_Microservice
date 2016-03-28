@@ -1,4 +1,6 @@
 "use strict";
+/*** Node.js modules ***/
+const assert = require('assert');
 /*
 from https://en.wikipedia.org/wiki/Hostname
 Restrictions on valid host names
@@ -91,6 +93,7 @@ function validate_Host_Name(
   host_Name//:str
 )/* => bool */{
   var is_Valid = true;//false;
+  var host_Name_Length = host_Name.length;
   // Punycode encoding
   // xn--bcher-kva.ch <- valid
   /*
@@ -100,10 +103,87 @@ function validate_Host_Name(
   var reg_Ex = /^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$/g;
   /**/
   if (
-    host_Name.length > 0 &&
-    host_Name.length < 253
+    host_Name_Length > 0 &&
+    host_Name_Length < 253
   ) {
-    test(host_Name);
+    var labels = [];
+    var labels_Index = 0;
+    var label = "";
+    var label_Length = 0;
+    var char = "";
+    var char_Index = 0;
+
+    labels = host_Name.split(".");
+    // throws "AssertionError:
+    //assert(labels.length > 1);
+    //assert.fail(labels.length, 1, undefined, '>');
+    //assert.ok(true);  // OK
+    if (labels.length > 1) {
+      for (labels_Index in labels) {
+        label = labels[labels_Index];
+        label_Length = label.length;
+        //assert(label_Length > 0);
+        //assert(label_Length <= 63);
+        if (
+          label_Length > 0 &&
+          label_Length <= 63
+        ) {
+          //[a-z] -> char.charCodeAt(0) >= 97 && <= 122
+          //[A-Z] -> char.charCodeAt(0) >= 65 && <= 90
+          //[0-9] -> char.charCodeAt(0) >= 48 && <= 57
+          //'-' -> char.charCodeAt(0) == 45
+          //assert(label.charCodeAt(0) != 45);
+          //assert(label.charCodeAt(label_Length - 1) != 45);
+          for (char_Index in label) {
+            /*
+            assert(
+              (label.charCodeAt(char_Index) >= 97 && label.charCodeAt(char_Index) <= 122) ||
+              (label.charCodeAt(char_Index) >= 65 && label.charCodeAt(char_Index) <= 90) ||
+              (label.charCodeAt(char_Index) >= 48 && label.charCodeAt(char_Index) <= 57) ||
+              (label.charCodeAt(char_Index) == 45)
+            );
+            */
+            if (
+              char_Index == 0 ||
+              char_Index == label_Length - 1
+            ) {
+              if (
+                label.charCodeAt(char_Index) == 45
+              ) {
+                is_Valid = false;
+
+                break;
+              }
+              if (
+                (label.charCodeAt(char_Index) >= 97 && label.charCodeAt(char_Index) <= 122) ||
+                (label.charCodeAt(char_Index) >= 65 && label.charCodeAt(char_Index) <= 90) ||
+                (label.charCodeAt(char_Index) >= 48 && label.charCodeAt(char_Index) <= 57) ||
+                (label.charCodeAt(char_Index) == 45)
+              ) {
+              } else {
+                is_Valid = false;
+
+                break;
+              }
+            }
+          }
+
+          if (!(is_Valid)) {
+
+            break;
+          }
+        } else {
+          is_Valid = false;
+
+          break;
+        }
+      }
+    } else {
+      is_Valid = false;
+    }
+
+    //is_Valid = reg_Ex.test(host_Name);
+
   } else {
     is_Valid = false;
   }
