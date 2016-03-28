@@ -149,14 +149,14 @@ var index_Template_Content_List = [
         '<h3>Example usage (live demo):</h3>',        
           '<ul>',
             '<li>',
-              '<a href="https://api-url-shortener-microservice.herokuapp.com/',
+              '<a href="https://api-url-shortener-microservice.herokuapp.com/' +
               'new/https://github.com/GlulkAlex/URL_Shortener_Microservice">',
                 'https://api-url-shortener-microservice.herokuapp.com/new/&lt;valid URL&gt;</a>', 
             '</li>',
             '<li>',
-              '<a href="https://api-url-shortener-microservice.herokuapp.com/',
+              '<a href="https://api-url-shortener-microservice.herokuapp.com/' +
               'new/htps://github./GlulkAlex/URL_Shortener_Microservice?allow=true">',
-                'https://api-url-shortener-microservice.herokuapp.com/',
+                'https://api-url-shortener-microservice.herokuapp.com/' +
                 'new/&lt;<b>invalid</b> URL&gt;?allow=true</a>',
             '</li>',
             '<li>',
@@ -167,7 +167,7 @@ var index_Template_Content_List = [
         '<h3>Example output:</h3>',        
           '<ul>',
             '<li>',
-              '<code>{ "original_url": "http://freecodecamp.com/news",',
+              '<code>{ "original_url": "http://freecodecamp.com/news",' +
               '"short_url": "https://api-url-shortener-microservice.herokuapp.com/QqZ" }</code>',
             '</li>',
           '</ul>',      
@@ -239,7 +239,7 @@ function send_JSON_Response(
 */
 // helper
 function generate_Unique_Short_Link(
-  collection_Size, //int
+  collection_Size, //int <- may be evaluated / inferred from 'docs'
   docs,//list of obj
   callback// <- optional
 ) /* => thenable Promise => (str | error)*/{
@@ -280,15 +280,20 @@ function generate_Unique_Short_Link(
   // insert must be next
   console.log('Unique short_Link:', short_Link);
   // Promise.resolve(thenable);
-  return Promise
-    .resolve(
-      short_Link
-      //{
-      //  then: (onFulfill, onReject) => {
-      //    onFulfill(short_Link);
-      //  }
-      //}
+  if (callback) {
+    //typeof ()=>{} == 'function'
+    return callback(short_Link);
+  } else {
+    return Promise
+      .resolve(
+        short_Link
+        //{
+        //  then: (onFulfill, onReject) => {
+        //    onFulfill(short_Link);
+        //  }
+        //}
     );
+  }
 }
 // helper
 function get_Unique_Short_Link(

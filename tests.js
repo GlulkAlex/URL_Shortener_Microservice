@@ -16,6 +16,8 @@ const mongoLab_URI = (
 /*** config end ***/
 /*** application modules ***/
 const host_Name_Validator = require('./host_Name_Validator.js');
+//generate_Unique_Short_Link
+const db_Helpers = require('./app.js');
 /*** application modules end ***/
 
 /*** tests ***/
@@ -26,18 +28,48 @@ var test_1 = function(
   var hosts_Length = hosts.length;
   var host_Index = 0;
   var host;
+  var results = [];
+  var result;
 
   for (host_Index in hosts) {
     host = hosts[host_Index];
     //validate_Host_Name
-    console.log("is ", host,"a valid name:", host_Name_Validator.is_Host_Name_Valid(host));
+    result = host_Name_Validator.is_Host_Name_Valid(host);
+    results.push(result);
+    console.log("is ", host,"a valid name:", result);
   }
+
+
+  return results;
+}
+var test_2 = function(
+  //urls//:list
+  hosts//:list
+) {
+  var hosts_Length = hosts.length;
+  var host_Index = 0;
+  var host;
+  var results = [];
+  var result;
+
+  for (host_Index in hosts) {
+    host = hosts[host_Index];
+    //validate_Host_Name
+    result = host_Name_Validator.is_Host_Name_Valid(host);
+    results.push(result);
+    console.log("is ", host,"a valid name:", result);
+  }
+
+
+  return results;
 }
 /*** tests end ***/
 
 //***#####################################################################***//
 /*** unit test (main) ***/
-test_1(
+var actual_Results;
+
+actual_Results = test_1(
   [
     "mongodb.github.io",
     "node-mongodb-native.api",
@@ -48,7 +80,19 @@ test_1(
     "www.xn----7sbajojiclh2ahkc2br7fc0m.xn--p1ai"
   ]
 );
-test_1(
+var expected_Results = [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+];
+//assert.equal({a: {b: 1}}, {a: {b: 1}});
+//AssertionError: [ true, true, true, true, true, true, true ] == [ true, true, true, true, true, true, true ]
+assert.deepEqual(actual_Results, expected_Results);
+actual_Results = test_1(
   [
     "mongodb..github.io",
     "-node-mongodb-native.api",
@@ -59,3 +103,13 @@ test_1(
     "www.xn----7sbajojiclh2ahkc2br7fc0m.xn--p1ai%"
   ]
 );
+expected_Results = [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+];
+assert.deepEqual(actual_Results, expected_Results);
