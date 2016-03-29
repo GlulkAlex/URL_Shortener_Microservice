@@ -52,9 +52,13 @@ function get_Short_Link_Length(
 }
 
 function short_Link_Generator(
-  collection_Size,// int
-  source_Link,// str
-  is_Debug_Mode// bool
+  //collection_Size,//: int
+  short_Link_Size,//int default:1, calculated / depended from 'collection_Size'
+  // using `get_Short_Link_Length`
+  // explicit (not from global)
+  options_List,//: list of chars
+  //source_Link,//: str <- only in case of good hash function
+  is_Debug_Mode//: bool
 )/* => str*/{
   "use strict";
       
@@ -70,11 +74,11 @@ function short_Link_Generator(
       
   // preprocessing / initializing
   if (
-    collection_Size == undefined ||
-    Number(collection_Size).toString() == "NaN" ||
-    collection_Size <= 0  
+    short_Link_Size == undefined ||
+    Number(short_Link_Size).toString() == "NaN" ||
+    short_Link_Size <= 0
   ){
-    collection_Size = 1;  
+    short_Link_Size = 1;
   } else {
     // Number("s").toString() == "NaN" 
     // ceil(x)	Returns x, rounded upwards to the nearest integer 
@@ -95,10 +99,7 @@ function short_Link_Generator(
     log_a(x) = ln(x) / ln(a)
     */
     // Math.log(x)	Returns the natural logarithm (base E) of x
-    short_Link_Length = get_Short_Link_Length(
-      collection_Size, // int
-      choose_Options.choose_Options_Size // int
-    );
+    short_Link_Length = short_Link_Size;
   }    
   if (is_Debug_Mode == undefined){
     is_Debug_Mode = process.argv[2] || false; 
@@ -116,8 +117,9 @@ function short_Link_Generator(
   // a random number between 0 (inclusive),  and 1 (exclusive)   
   for (i = 0; i < short_Link_Length; i++){
     // must be from (0) to (122-97) == (26) total length
-    current_Char = choose_Options.symbols_List[random_Integer(0, 25)];
-    // upper / lower case  
+    //current_Char = choose_Options.symbols_List[random_Integer(0, 25)];
+    current_Char = options_List[random_Integer(0, 25)];
+    // upper / lower case
     if (random_Boolean()){
       result += current_Char;//.toLowerCase();  
     } else {

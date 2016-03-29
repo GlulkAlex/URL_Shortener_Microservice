@@ -36,6 +36,8 @@ const mongoLab_URI = (
 /*** application modules ***/
 const host_Name_Validator = require('./host_Name_Validator.js');
 //.get_Short_Link()
+//.choose_Options()
+//.get_Short_Link_Length()
 const link_Gen = require('./short_link_generator.js');//.short_Link_Generator;
 //generate_Unique_Short_Link
 // started hole app, not just import designated functions
@@ -60,7 +62,7 @@ function make_Links_Documents(
   for (;loop_Counter < size;loop_Counter++){
     //{"original_url":"original_Link_1","short_url":""}
     // ??? WTF ???
-    // TODO : test short_Link_Generator for ''
+    // DONE : test short_Link_Generator for ''
     results.push(
       {
         "original_url": "original_Link_" + loop_Counter,
@@ -192,7 +194,7 @@ var test_1 = function(
   );
 
   return results;
-}
+};
 // DONE 1.drop collection
 // DONE 2.dummy data generator
 // DONE 3.insert generated data
@@ -224,7 +226,62 @@ var test_2 = function(
 
 
   return results;
-}
+};
+
+var test_3 = function(
+  //urls//:list
+) {
+  "use strict";
+
+  var result;
+  var results = [];
+  var filtered = [];
+
+  results = link_Gen.choose_Options.symbols_List;
+  console.log("results: %j", results);
+  filtered = results.filter((i) => i == "");
+  console.log("filtered results: %j", filtered);
+  result = filtered.length > 0;
+
+
+  return result;
+};
+
+var test_4 = function(
+  link_Size,//:int
+  links_Total//:int
+) {
+  "use strict";
+
+  var result;
+  var results = [];
+  var filtered = [];
+  var options_List = link_Gen.choose_Options.symbols_List;
+  var generate = link_Gen.get_Short_Link;
+  var loop_Counter = 0;
+  var link = "";
+
+  for (;loop_Counter < links_Total;loop_Counter++) {
+    link = generate(
+      link_Size,
+      options_List
+    );
+    results
+      .push(
+        link
+    );
+    if (link == "") {
+      filtered.push(link);
+    }
+  }
+  //console.log("results: %j", results);
+  //filtered = results.filter((i) => i == "");
+  console.log("filtered results: %j", filtered);
+  result = filtered.length > 0;
+
+
+  return result;
+};
 /*** tests end ***/
 
 //***#####################################################################***//
@@ -271,21 +328,21 @@ if (
       "www.-w3schools.com",
       "www.xn----7sbajojiclh2ahkc2br7fc0m.xn--p1ai%"
     ]
-);
-expected_Results = [
-    false,
-    false,
-    false,
-    false,
-    false,
-    false,
-    false,
-];
-assert.deepEqual(actual_Results, expected_Results);
+  );
+  expected_Results = [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+  ];
+  assert.deepEqual(actual_Results, expected_Results);
 }
 if (
-  true
-  //false
+  //true
+  false
 ) {
   // case 1: empty collection, no duplicate hits
   actual_Results = test_2();
@@ -293,4 +350,25 @@ if (
   //actual_Results = test_2();
   // case 3: non-empty collection, high probability of duplicate hits for field of same length
   //actual_Results = test_2();
+}
+if (
+  true
+  //false
+) {
+  actual_Results = test_3();
+  expected_Results = (
+    false
+    //true
+  );
+  assert(actual_Results == expected_Results);
+}
+if (
+  true
+  //false
+) {
+  actual_Results = test_4(1, 150000);
+  expected_Results = false;
+  //assert(actual_Results == expected_Results);
+  // or (same as)
+  assert.equal(actual_Results, expected_Results);
 }
