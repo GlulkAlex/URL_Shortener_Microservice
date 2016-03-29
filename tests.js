@@ -9,7 +9,17 @@ const MongoClient = require('mongodb').MongoClient;
 
 /*** config ***/
 // If X.json is a file, parse X.json to a JavaScript Object.
-const env = require('./.env.json');
+//try {pak = require('package.json');}catch(err){pak = null;} ? pak : "fail";
+//const
+var env;// = require('./.env.json');
+try {env = require('package.json');
+}catch(err){
+  env = {
+    "TEST_MONGODB": {
+      "value": false
+    }
+  };
+}
 const mongoLab_URI = (
   // must be on `.env` file or
   // in heroku config

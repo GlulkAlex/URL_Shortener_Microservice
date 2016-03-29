@@ -14,7 +14,9 @@ function generate_Unique_Short_Link(
   var doc_Index;
   var doc;
   console.log('receive all docs in links.');
-
+  // TODO 1. 3 attempts will be enough, then if fails => link size + 1
+  // TODO 2. link size as parameter / argument (not collection_Size)
+  // TODO 3. so refactor get_Short_Link
   while (
     post_Condition
   ) {
