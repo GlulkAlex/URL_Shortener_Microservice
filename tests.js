@@ -78,6 +78,19 @@ function make_Links_Documents(
   return results;
 }
 
+// useless, nothing different form MongoClient.connect
+function get_DB(
+  mongoLab_URI//: str
+)/* => Promise(db) */{
+  "use strict";
+
+  var connection = MongoClient.connect(mongoLab_URI);//, function(err, db) {
+
+  // Promise <pending> -> thanble
+  //return Promise.resolve(connection.then((db) => {return db;}));
+  return connection.then((db) => {return db;});
+}
+
 function get_Collection(
   mongoLab_URI//:str
   ,collection_Name//:str
@@ -96,8 +109,10 @@ function get_Collection(
         //}
     );
   } else {
-    var connection = MongoClient.connect(mongoLab_URI);//, function(err, db) {
+    //var connection = MongoClient.connect(mongoLab_URI);//, function(err, db) {
     collection_Name = collection_Name ? collection_Name : 'tests';
+    //db = Promise.resolve(get_DB(mongoLab_URI));
+    //db = Promise.resolve(get_DB(mongoLab_URI).then((dB) => {return dB;}));
 
     //db.collections(function(err, collections) {
     // ? Promise <pending> ?
@@ -105,8 +120,11 @@ function get_Collection(
     // typeof return: undefined
     // something like .flatMap needed
     // CORRECT (the function returns a promise, and the caller will handle the rejection)
+    // Resolving with `thenables` to flatten nested then() calls
     return Promise.resolve(
-      connection
+      //connection
+        //.then((db) => {return db;})
+      get_DB(mongoLab_URI)
         .then((db) => {
         // defined `this` does not make any changes on `pending`
         //.then(function(db) {
@@ -156,6 +174,8 @@ function get_Collection(
             return db.collection(collection_Name);
           }
       )
+      // TypeError: db.collection is not a function
+      //db.collection(collection_Name)
     );
   }
 }
@@ -588,6 +608,40 @@ if (
 if (
   //true
   //false
+  1 == 0
+) {
+  //actual_Results = get_DB(
+  actual_Results = //Promise
+  //  .resolve(
+      get_DB(
+        mongoLab_URI//:str
+      )
+      .then((db) => {
+        console.log("typeof actual_Results:", (typeof actual_Results));
+        // actual_Results: Promise { <pending> }
+        console.log("actual_Results:", actual_Results);
+        console.log("db:", db);
+
+        return db;
+      }).catch((err) => {console.log("get_DB.then err:", err.stack);}//)
+  );
+  // databaseName: 'sandbox_mongo-db_v3-0'
+  /*
+  actual_Results = Promise
+    .resolve(
+      actual_Results
+        .then((db) => {
+            //console.log("actual_Results:", actual_Results);
+            console.log("db:", db);
+          }
+        )
+  );
+  */
+  //console.log("actual_Results:", actual_Results);
+}
+if (
+  //true
+  //false
   0 == 1
 ) {
   actual_Results = clear_Links(
@@ -609,18 +663,26 @@ if (
   // actual_Results: Promise { undefined }
   actual_Results = //Promise
     //.resolve(
+    //.all([
       get_Collection(
         mongoLab_URI,//:str
         "tests"//:str
       )
-      //.then((col) => {
-      .then(function(col) {
+      /**/
+      .then((col) => {
+      //.then(function(col) {
             console.log("col:", col);
+            console.log("actual_Results:", actual_Results);
 
-            //return coll;
-            return Promise.resolve(cal);
+            return col;
+            //return Promise.resolve(col);
+            //return {"collection": col};
           }
-      //)
+      )
+      .catch((err) => {console.log("get_Collection.then err:", err.stack);}
+    //)
+    /**/
+    //]
   );
   console.log("typeof actual_Results:", (typeof actual_Results));
   // actual_Results: Promise { <pending> }
@@ -717,20 +779,23 @@ if (
             console.log("col:", col);
 
             ///Promise.resolve(actual_Results);
-            ///return Promise.resolve(coll);
+            ///return Promise.resolve(col);
             return Promise.resolve(actual_Results);
           }
         )
         */
-        //.then((col) => {
+        /*
+        .then((col) => {
           // typeof col: undefined
           // if using above return Promise.resolve(actual_Results) than
           // typeof col: object
-          //console.log("typeof col:", (typeof col));
-
+          console.log("typeof col:", (typeof col));
+          console.log("actual_Results:", actual_Results);
           //return Promise.resolve(actual_Results);
-        //}
-      //);
+          return col;
+        }
+      );
+      */
   ///);
 }
 if (
