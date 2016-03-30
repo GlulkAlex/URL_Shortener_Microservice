@@ -1,3 +1,4 @@
+"use strict";
 // helper
 function generate_Unique_Short_Link(
   collection_Size, //int <- may be evaluated / inferred from 'docs'
@@ -15,8 +16,14 @@ function generate_Unique_Short_Link(
   var doc;
   console.log('receive all docs in links.');
   // TODO 1. 3 attempts will be enough, then if fails => link size + 1
+  // highly unlikely that all 3 random value will be the same, even for link size 1
+  // link size + 1 as -> "fail safe"
   // TODO 2. link size as parameter / argument (not collection_Size)
-  // TODO 3. so refactor get_Short_Link
+  // DONE 3. so refactor get_Short_Link
+  // TODO 4. replace check if (any) current link has match in DB
+  // TODO with bulk insert of all generated values
+  // assuming that at least one will succeed or all fails
+  // TODO 4.1 so refactor return value to link list
   while (
     post_Condition
   ) {

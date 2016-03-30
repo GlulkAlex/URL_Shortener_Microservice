@@ -47,6 +47,9 @@ const db_Helpers = require('./db_Helpers.js');
 /*** application modules end ***/
 
 /*** helpers ***/
+// TODO create unique fields indexes
+// TODO query for (check if) field value in the list
+// TODO extract info about successfully inserted documents from 'insertMany' result
 // for
 // col.insertMany([{a:1}, {a:2}], function(err, r) {
 // r.insertedCount
