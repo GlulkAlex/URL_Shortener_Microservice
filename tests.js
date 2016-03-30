@@ -79,38 +79,59 @@ function make_Links_Documents(
 }
 
 function get_Collection(
-  mongoLab_URI,//:str
-  collection_Name//:str
-)/* => Promise */{
+  mongoLab_URI//:str
+  ,collection_Name//:str
+  ,db//: obj [db]
+)/* => Promise(collection) */{
   "use strict";
 
-  var connection = MongoClient.connect(mongoLab_URI);//, function(err, db) {
-  collection_Name = collection_Name ? collection_Name : 'tests';
+  if (db) {
+    return Promise
+      .resolve(
+        //() => {
+          //var collection =
+          db.collection(collection_Name)//;
 
-  //db.collections(function(err, collections) {
-  // ? Promise <pending> ?
-  return Promise.resolve(
-    connection
-      .then((db) => {
-          // Create a collection we want to drop later
-          // Returns:
-          // the new Collection instance if not in strict mode
-          var collection = db.collection(collection_Name);
+          //return collection;
+        //}
+    );
+  } else {
+    var connection = MongoClient.connect(mongoLab_URI);//, function(err, db) {
+    collection_Name = collection_Name ? collection_Name : 'tests';
 
-          return collection;
-        }
-    )
-  );
+    //db.collections(function(err, collections) {
+    // ? Promise <pending> ?
+    // without .resolve
+    // typeof return: undefined
+    // something like .flatMap needed
+    return Promise.resolve(
+      connection
+        .then((db) => {
+            // Create a collection we want to drop later
+            // Returns:
+            // the new Collection instance if not in strict mode
+            var collection = db.collection(collection_Name);
+
+            // not helping, still having
+            // return: Promise { <pending> }
+            //return Promise.resolve(collection);
+            return collection;
+          }
+      )
+    );
+  }
 }
 
-function clear_Links(mongoLab_URI, collection_Name){
+function clear_Links(
+  mongoLab_URI,//: str
+  collection_Name//: str
+)/* => Promise(db) */{
   "use strict";
 
   var connection = MongoClient.connect(mongoLab_URI);//, function(err, db) {
   collection_Name = collection_Name ? collection_Name : 'tests';
 
-  //db.collections(function(err, collections) {
-  // ? Promise <pending> ?
+  // Promise <pending> -> thanble
   return Promise.resolve(
     connection
       .then((db) => {
@@ -155,6 +176,7 @@ function clear_Links(mongoLab_URI, collection_Name){
           }
         );
 
+        return db;
       }
       ).catch((err) => {console.log("connection err:", err.stack);}
     )
@@ -162,70 +184,73 @@ function clear_Links(mongoLab_URI, collection_Name){
 };
 
 function create_Unique_Index(
-  collection_Name//:str
+  //mongoLab_URI//:str
+  //,collection_Name//:str
+  collection//: obj [collection]
   ,field_Name//:str
 )/* => Promise */{
   "use strict";
 
-  var connection = MongoClient.connect(mongoLab_URI);//, function(err, db) {
-  collection_Name = collection_Name ? collection_Name : 'tests';
-
-
-  return Promise.resolve(
-    //clear.then err: ReferenceError: collection is not defined
-    // Create an index on the a field
-    collection
-      .createIndex(
-        {field_Name:1}
-        , {unique:true, background:true, w:1}
+  //var collection = get_Collection(
+  //  mongoLab_URI,//:str
+  //  collection_Name ? collection_Name : 'tests'//:str
+  //);
+  if (collection) {
+    return Promise.resolve(
+      //clear.then err: ReferenceError: collection is not defined
+      // Create an index on the a field
+      collection
+        // TypeError: collection.createIndex is not a function
+        .createIndex(
+          {field_Name:1}
+          , {unique:true, background:true, w:1}
+        )
+        .then((indexName) => {
+            console.log("indexName:", indexName, "for", field_Name, "field created");
+          }
+        ).catch((err) => {
+            console.log("connection err:", err.code);
+            console.log(err.stack);
+          }
       )
-      .then((indexName) => {
-          console.log("indexName:", indexName, "for", field_Name, "field created");
-        }
-      ).catch((err) => {
-          console.log("connection err:", err.code);
-          console.log(err.stack);
-        }
-    )
-  );
+    );
+  } else {
+    console.log("collection undefined ?:", collection);
+  }
 };
 
 function add_Docs(
-  documents,//:list of obj
-  collection_Name//:str
-)/* => Promise */{
+  //mongoLab_URI//:str
+  documents//:list of obj
+  //,collection_Name//:str
+  ,collection//: obj [collection]
+)/* => Promise(result) */{
   "use strict";
 
-  var connection = MongoClient.connect(mongoLab_URI);//, function(err, db) {
-  collection_Name = collection_Name ? collection_Name : 'tests';
+  //var collection = get_Collection(
+  //  mongoLab_URI//:str
+  //  ,(collection_Name ? collection_Name : 'tests')//:str
+  //);
 
-  //db.collections(function(err, collections) {
   // ? Promise <pending> ?
   return Promise.resolve(
-    connection
-      .then((db) => {
-          // Create a collection we want to drop later
-          // Returns:
-          // the new Collection instance if not in strict mode
-          var collection = db.collection(collection_Name);
+    collection
+      .insertMany(documents)//, function(err, r) {
+      .then((result) => {
+            console.log("added:", result.insertedCount, "documents to ", collection_Name);
+            // Let's close the db
+            db.close();
 
-          collection
-            .insertMany(documents)//, function(err, r) {
-            .then((result) => {
-                  console.log("added:", result.insertedCount, "documents to ", collection_Name);
-                  // Let's close the db
-                  db.close();
-                }
-              ).catch((err) => {
-                  // MongoError: ns (name space -> <db.collection>) not found
-                  console.log("insertMany err:", err.code);
-                  console.log(err.stack);
-                }
-            );
 
-        }
-      ).catch((err) => {console.log("connection err:", err.stack);}
-    )
+            //return Promise.resolve(result);
+            return result;
+          }
+        ).catch((err) => {
+            // MongoError: ns (name space -> <db.collection>) not found
+            console.log("insertMany err:", err.code);
+            console.log(err.stack);
+          }
+      )
   );
 };
 /*** helpers end ***/
@@ -271,8 +296,8 @@ var test_2 = function(
   console.log("results: %j", results);
   //"tests"
   var clear = clear_Links(mongoLab_URI, "tests");
-  console.log("typeof clear:", (typeof clear));
-  console.log("clear instanceof Promise:", (clear instanceof Promise));
+  //console.log("typeof clear:", (typeof clear));
+  //console.log("clear instanceof Promise:", (clear instanceof Promise));
 
   clear
     .then(() => {
@@ -365,16 +390,27 @@ var test_5 = function(
   console.log("clear instanceof Promise:", (clear instanceof Promise));
 
   clear
-    .then(() => {
+    .then((db) => {
+        var collection = get_Collection(
+          mongoLab_URI,//:str
+          collection_Name//:str
+          ,db
+        );
+        console.log("typeof collection:", (typeof collection));
+        console.log("collection instanceof Promise:", (collection instanceof Promise));
+        console.log("collection Promise status:", collection);
+
         create_Unique_Index(
           //"tests"//:str
-          collection_Name
+          //collection_Name
+          collection
           ,"short_url"//:str
         )
         .then(() => {
             add_Docs(
               documents,//:list of obj
-              collection_Name//:str
+              //collection_Name//:str
+              collection
             );
             // already handled (within)in above function
             //.catch((err) => {console.log("add_Docs.then err:", err.stack);});
@@ -395,10 +431,18 @@ var test_5 = function(
 /*** unit test (main) ***/
 var actual_Results;
 var expected_Results;
+var run_Tests = [
+  {"test": 1, "run": 0}
+  ,{"test": 2, "run": 0}
+  ,{"test": 3, "run": 0}
+  ,{"test": 4, "run": 0}
+  ,{"test": 5, "run": 1}
+];
 
 if (
+  run_Tests[0].run == 1
   //true
-  false
+  //false
 ) {
   // case 1: valid host names
   actual_Results = test_1(
@@ -449,7 +493,8 @@ if (
 }
 if (
   //true
-  false
+  //false
+  0 == 1
 ) {
   // case 1: empty collection, no duplicate hits
   actual_Results = test_2();
@@ -460,7 +505,8 @@ if (
 }
 if (
   //true
-  false
+  //false
+  0 == 1
 ) {
   actual_Results = test_3();
   expected_Results = (
@@ -471,7 +517,8 @@ if (
 }
 if (
   //true
-  false
+  //false
+  0 == 1
 ) {
   actual_Results = test_4(1, 150000);
   expected_Results = false;
@@ -481,7 +528,8 @@ if (
 }
 if (
   //true
-  false
+  //false
+  1 == 1
 ) {
   // case 1: all docs -> unique
   //actual_Results =
@@ -501,17 +549,143 @@ if (
 }
 if (
   //true
-  false
+  //false
+  0 == 1
 ) {
-  actual_Results = get_Collection(
+  actual_Results = clear_Links(
     mongoLab_URI,//:str
     "tests"//:str
   );
   console.log("typeof actual_Results:", (typeof actual_Results));
   // actual_Results: Promise { <pending> }
   console.log("actual_Results:", actual_Results);
+  // databaseName: 'sandbox_mongo-db_v3-0'
+  Promise.resolve(actual_Results.then((db) => {console.log("db:", db);}));
+}
+if (
+  //true
+  //false
+  0 == 1
+) {
+  // case 1: no db passed
+  actual_Results = get_Collection(
+    mongoLab_URI,//:str
+    "tests"//:str
+  );
+  console.log("typeof actual_Results:", (typeof actual_Results));
+  // actual_Results: Promise { <pending> }
+  /*
+  Internally, a promise can be in one of three states:
+    - Pending,
+    when the final value is not available yet.
+    This is the only state
+    that may transition to
+    one of the other two states.
+    - Fulfilled,
+    when and if the final value becomes available.
+    A fulfillment value becomes
+    permanently associated with the promise.
+    This may be any value, including undefined.
+    - Rejected,
+    if an error prevented the final value from being determined.
+    A rejection reason becomes
+    permanently associated with the promise.
+    This may be
+    any value, including undefined,
+    though it is generally an Error object,
+    like in exception handling.
+
+  Return value
+    A new `promise`
+    that is initially `pending`,
+    then assumes a `state`
+    that depends on
+    the outcome of the invoked `callback` function:
+      - If the `callback` returns a value
+      that is not a `promise`, including `undefined`,
+      the new `promise` is `fulfilled`
+      with this fulfillment `value`,
+      even if the original `promise` was `rejected`.
+      - If the `callback` `throws` an `exception`,
+      the new `promise` is `rejected`
+      with the `exception` as the `rejection` reason,
+      even if the original `promise` was `fulfilled`.
+      - If the `callback` `returns` a `promise`,
+      the new `promise` will eventually assume
+      the same `state` as the `returned` `promise`.
+  */
+  console.log("actual_Results:", actual_Results);
   // namespace: 'sandbox_mongo-db_v3-0.tests',
   // name: 'tests',
   // promiseLibrary: [Function: Promise],
-  actual_Results.then((col) => {console.log("col:", col);});
+  ///Promise.resolve(actual_Results);
+  ///Promise
+    // ? not `resolves` without `then` ?
+    ///.resolve(
+      actual_Results
+        /*
+        then()
+        Calls one of the provided functions
+        as soon as this promise is either
+        fulfilled or rejected.
+        A new promise is returned,
+        whose state evolves depending on this promise and
+        the provided callback functions.
+
+        The appropriate callback is
+        always invoked after this method returns,
+        even if
+        this promise is already fulfilled or rejected.
+        You can also
+        call the then method multiple times
+        on the same promise, and
+        the callbacks will be invoked in the same order
+        as they were registered.
+        */
+        .then((col) => {
+            console.log("col:", col);
+
+            ///Promise.resolve(actual_Results);
+            ///return Promise.resolve(coll);
+            return Promise.resolve(actual_Results);
+          }
+        //).then((col) => {
+          // typeof col: undefined
+          // if using above return Promise.resolve(actual_Results) than
+          // typeof col: object
+          //console.log("typeof col:", (typeof col));
+
+          //return Promise.resolve(actual_Results);
+        //}
+      );
+  ///);
+}
+if (
+  //true
+  //false
+  0 == 1
+) {
+  // case 2: db passed
+  clear_Links(
+    mongoLab_URI,//:str
+    "tests"//:str
+  ).then((db) => {
+    actual_Results = get_Collection(
+      mongoLab_URI,//:str
+      "tests"//:str
+      ,db
+    );
+    console.log("typeof actual_Results:", (typeof actual_Results));
+    // actual_Results: Promise { collection }
+    console.log("actual_Results:", actual_Results);
+    // namespace: 'sandbox_mongo-db_v3-0.tests',
+    // name: 'tests',
+    // promiseLibrary: [Function: Promise],
+    Promise
+      // `resolves` without `then`
+      .resolve(
+        actual_Results
+          //.then((col) => {console.log("col:", col);})
+    );
+  });
 }
