@@ -104,18 +104,56 @@ function get_Collection(
     // without .resolve
     // typeof return: undefined
     // something like .flatMap needed
+    // CORRECT (the function returns a promise, and the caller will handle the rejection)
     return Promise.resolve(
       connection
         .then((db) => {
+        // defined `this` does not make any changes on `pending`
+        //.then(function(db) {
             // Create a collection we want to drop later
             // Returns:
             // the new Collection instance if not in strict mode
-            var collection = db.collection(collection_Name);
+            //db.collection('test_correctly_access_collections', {strict:true}, function(err, col3) {
+            //var collection = db.collection(collection_Name);
 
             // not helping, still having
             // return: Promise { <pending> }
             //return Promise.resolve(collection);
-            return collection;
+            ///return Promise.resolve((c) => {return c;});
+            //return collection;
+            /*
+            // works but give the same results / behaviour as before / above
+            return db
+              .collection(
+                collection_Name
+                //, {strict:true}
+                , function(err, col) {
+                  if (err) {
+                    return Promise.reject(err);
+                  } else {
+                    return Promise.resolve(col);
+                  }
+                }
+            );
+            */
+            /*
+            // works but give the same results / behaviour as before / above
+            return new Promise(
+              function(resolve, reject) {
+                db
+                .collection(
+                  collection_Name
+                  //, {strict:true}
+                  , function(err, col) {
+                    if (err) {
+                      reject(err);
+                    } else {
+                      resolve(col);
+                    }
+                });
+            });
+            */
+            return db.collection(collection_Name);
           }
       )
     );
@@ -529,7 +567,7 @@ if (
 if (
   //true
   //false
-  1 == 1
+  1 == 0
 ) {
   // case 1: all docs -> unique
   //actual_Results =
@@ -565,12 +603,24 @@ if (
 if (
   //true
   //false
-  0 == 1
+  1 == 1
 ) {
   // case 1: no db passed
-  actual_Results = get_Collection(
-    mongoLab_URI,//:str
-    "tests"//:str
+  // actual_Results: Promise { undefined }
+  actual_Results = //Promise
+    //.resolve(
+      get_Collection(
+        mongoLab_URI,//:str
+        "tests"//:str
+      )
+      //.then((col) => {
+      .then(function(col) {
+            console.log("col:", col);
+
+            //return coll;
+            return Promise.resolve(cal);
+          }
+      //)
   );
   console.log("typeof actual_Results:", (typeof actual_Results));
   // actual_Results: Promise { <pending> }
@@ -594,6 +644,26 @@ if (
     any value, including undefined,
     though it is generally an Error object,
     like in exception handling.
+
+  Promise then(
+    Function onFulfill,
+    Function onReject
+  );
+  Parameters:
+  - onFulfill Optional
+  If the promise is `fulfilled`,
+  this function is invoked
+  with the `fulfillment` `value` of the `promise`
+  as its only argument, and
+  the `outcome` of the function determines
+  the `state` of the new `promise`
+  `returned` by the `then` method.
+  In case
+  this parameter is
+  not a function (usually 'null'),
+  the new `promise` `returned` by the `then` method is
+  `fulfilled` with
+  the same `value` as the original `promise`.
 
   Return value
     A new `promise`
@@ -622,7 +692,7 @@ if (
   ///Promise
     // ? not `resolves` without `then` ?
     ///.resolve(
-      actual_Results
+      //actual_Results
         /*
         then()
         Calls one of the provided functions
@@ -642,6 +712,7 @@ if (
         the callbacks will be invoked in the same order
         as they were registered.
         */
+        /*
         .then((col) => {
             console.log("col:", col);
 
@@ -649,7 +720,9 @@ if (
             ///return Promise.resolve(coll);
             return Promise.resolve(actual_Results);
           }
-        //).then((col) => {
+        )
+        */
+        //.then((col) => {
           // typeof col: undefined
           // if using above return Promise.resolve(actual_Results) than
           // typeof col: object
@@ -657,7 +730,7 @@ if (
 
           //return Promise.resolve(actual_Results);
         //}
-      );
+      //);
   ///);
 }
 if (
