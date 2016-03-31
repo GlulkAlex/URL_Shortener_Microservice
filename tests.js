@@ -267,6 +267,8 @@ function create_Unique_Index(
         )
         .then((indexName) => {
             console.log("indexName:", indexName, "for", field_Name, "field created");
+
+            return collection;// ? for further .then() ?
           }
         ).catch((err) => {
             console.log("connection err:", err.code);
@@ -444,60 +446,108 @@ var test_4 = function(
   return result;
 };//("test 4: all links must be non-empty", 1, 150000);/*() <- on / off */
 
-var test_5 = function(
-  description
-  ,collection_Name//:str
-  ,documents//:list of obj
-  ,indexes_List//:list of str
-)/* => Promise ? */ {
-  "use strict";
-  console.log(description);
-  var result;
-  var results = [];
-
-  console.log("mongoLab_URI is:", mongoLab_URI);
-  //results = make_Links_Documents(7);
-  //console.log("results: %j", results);
-  //"tests"
-  var clear = clear_Links(mongoLab_URI, collection_Name);
-  console.log("typeof clear:", (typeof clear));
-  console.log("clear instanceof Promise:", (clear instanceof Promise));
-
-  clear
-    .then((db) => {
-        var collection = get_Collection(
-          mongoLab_URI,//:str
-          collection_Name//:str
-          ,db
-        );
-        console.log("typeof collection:", (typeof collection));
-        console.log("collection instanceof Promise:", (collection instanceof Promise));
-        console.log("collection Promise status:", collection);
-
-        create_Unique_Index(
-          //"tests"//:str
-          //collection_Name
-          collection
-          ,"short_url"//:str
-        )
-        .then(() => {
-            add_Docs(
-              documents,//:list of obj
-              //collection_Name//:str
-              collection
-            );
-            // already handled (within)in above function
-            //.catch((err) => {console.log("add_Docs.then err:", err.stack);});
-          }
-        )
-        .catch((err) => {console.log("create_Unique_Index.then err:", err.stack);});
+// case 1: all docs -> unique
+/*
+db.tests.createIndex(
+      {short_url: 1}
+      ,{
+        background: true
+        ,unique: true
       }
-    ).catch((err) => {console.log("clear.then err:", err.stack);}
-  );
+);
+db.tests.insert(
+   [
+     {"original_url" : "o_L_0", "short_url" : "a"}
+    ,{"original_url" : "o_L_1", "short_url" : "b"}
+    ,{"original_url" : "o_L_2", "short_url" : "c"}
+    ,{"original_url" : "o_L_3", "short_url" : "vV"}
+   ],
+   { ordered: false }
+);
+*/
+var  docs_Case_1 = [
+  {"original_url" : "o_L_1", "short_url" : "a"}
+  ,{"original_url" : "o_L_2", "short_url" : "b"}
+  ,{"original_url" : "o_L_3", "short_url" : "c"}
+  ,{"original_url" : "o_L_4", "short_url" : "vV"}
+];
+var test_5 = function(description){
+  "use strict";
+  // curred
+  return function(
+    mongoLab_URI//:str
+    ,collection_Name//:str
+    ,documents//:list of obj
+    ,indexes_List//:list of str
+  )/* => Promise ? */ {
+    "use strict";
+    console.log(description);
+
+    var result;
+    var results = [];
+
+    console.log("mongoLab_URI is:", mongoLab_URI);
+    //results = make_Links_Documents(7);
+    //console.log("results: %j", results);
+    //"tests"
+    var clear = clear_Links(mongoLab_URI, collection_Name);
+    //console.log("typeof clear:", (typeof clear));
+    //console.log("clear instanceof Promise:", (clear instanceof Promise));
+
+    clear
+      .then((db) => {
+          var collection_Promise = get_Collection(
+            mongoLab_URI,//:str
+            collection_Name//:str
+            ,db
+          );
+          //console.log("typeof collection:", (typeof collection));
+          //console.log("collection instanceof Promise:", (collection instanceof Promise));
+          //console.log("collection Promise status:", collection);
+
+          collection_Promise
+            .then((collection) => {
+                create_Unique_Index(
+                  //"tests"//:str
+                  //collection_Name
+                  collection
+                  ,"short_url"//:str
+                )//;
+                .then(() => {
+                    // indexes(callback){Promise}
+                    // Retrieve all the indexes on the collection.
+                    collection
+                      .indexes()
+                      .then((indexes) => {console.log("collection.indexes:%j", indexes);});
+                  }
+                )
+              }
+            )
+            /*
+            .then((collection) => {
+              add_Docs(
+                documents,//:list of obj
+                //collection_Name//:str
+                collection
+              );
+              // already handled (within)in above function
+              //.catch((err) => {console.log("add_Docs.then err:", err.stack);});
+            }
+          )*/
+          .catch((err) => {
+              //console.log("create_Unique_Index.then err:", err.stack);
+              console.log("collection_Promise.then err:", err.stack);
+            }
+          );
+        }
+      ).catch((err) => {console.log("clear.then err:", err.stack);}
+    );
 
 
-  //return results;
-};//("test 5: ", null, null, null);
+    //return results;
+  };
+}("test 5: must drop collection, then create unique index in the new collection")//;
+(mongoLab_URI, "tests", docs_Case_1);
 
 var test_6 = function(description){
   "use strict";
@@ -600,8 +650,8 @@ var test_8 = function(description){
     }).catch((err) => {console.log("collection_Promise then:", err.stack);}
     );
   };
-}("test 8: must return collection object from DB, when no db passed")//;
-(get_Collection(mongoLab_URI, "tests"));
+}("test 8: must return collection object from DB, when no db passed");
+//(get_Collection(mongoLab_URI, "tests"));
 //("tests", mongoLab_URI);
 /*** tests end ***/
 
@@ -709,45 +759,6 @@ if (
   //false
   1 == 0
 ) {
-  // case 1: all docs -> unique
-  /*
-  db.tests.createIndex(
-        {short_url: 1}
-        ,{
-          background: true
-          ,unique: true
-        }
-  );
-  db.tests.insert(
-     [
-       {"original_url" : "o_L_0", "short_url" : "a"}
-      ,{"original_url" : "o_L_1", "short_url" : "b"}
-      ,{"original_url" : "o_L_2", "short_url" : "c"}
-      ,{"original_url" : "o_L_3", "short_url" : "vV"}
-     ],
-     { ordered: false }
-  );
-  */
-  //actual_Results =
-  test_5(
-    "tests"//:str
-    ,[
-      {"original_url" : "o_L_1", "short_url" : "a"}
-      ,{"original_url" : "o_L_2", "short_url" : "b"}
-      ,{"original_url" : "o_L_3", "short_url" : "c"}
-      ,{"original_url" : "o_L_4", "short_url" : "vV"}
-    ]
-   );
-  //expected_Results = false;
-  //assert(actual_Results == expected_Results);
-  // or (same as)
-  //assert.equal(actual_Results, expected_Results);
-}
-if (
-  //true
-  //false
-  1 == 0
-) {
   // case 2: some docs -> unique
   /*
   db.tests.createIndex({"original_url": 1}, {"unique": true});
@@ -811,40 +822,6 @@ if (
   //assert(actual_Results == expected_Results);
   // or (same as)
   //assert.equal(actual_Results, expected_Results);
-}
-if (
-  //true
-  //false
-  1 == 0
-) {
-  //actual_Results = get_DB(
-  actual_Results = //Promise
-  //  .resolve(
-      get_DB(
-        mongoLab_URI//:str
-      )
-      .then((db) => {
-        console.log("typeof actual_Results:", (typeof actual_Results));
-        // actual_Results: Promise { <pending> }
-        console.log("actual_Results:", actual_Results);
-        console.log("db:", db);
-
-        return db;
-      }).catch((err) => {console.log("get_DB.then err:", err.stack);}//)
-  );
-  // databaseName: 'sandbox_mongo-db_v3-0'
-  /*
-  actual_Results = Promise
-    .resolve(
-      actual_Results
-        .then((db) => {
-            //console.log("actual_Results:", actual_Results);
-            console.log("db:", db);
-          }
-        )
-  );
-  */
-  //console.log("actual_Results:", actual_Results);
 }
 if (
   //true
