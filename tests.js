@@ -94,7 +94,7 @@ function get_DB(
 function get_Collection(
   mongoLab_URI//:str
   ,collection_Name//:str
-  ,db//: obj [db]
+  ,db//: obj [db] <- optional
 )/* => Promise(collection) */{
   "use strict";
 
@@ -118,7 +118,7 @@ function get_Collection(
     // ? Promise <pending> ?
     // without .resolve
     // typeof return: undefined
-    // something like .flatMap needed
+    // something like .flatMap needed ? or just db.close() in the right place ?
     // CORRECT (the function returns a promise, and the caller will handle the rejection)
     // Resolving with `thenables` to flatten nested then() calls
     return Promise.resolve(
@@ -174,6 +174,8 @@ function get_Collection(
             return db.collection(collection_Name);
           }
       )
+      // work, but changes nothing
+      //.then((collection) => {return collection;})
       // TypeError: db.collection is not a function
       //db.collection(collection_Name)
     );
@@ -499,13 +501,13 @@ var test_5 = function(
 
 var test_6 = function(description){
   "use strict";
-  console.log(description);
   // curred
   return function(
     collection_Name//:str
     //,documents//:list of obj
   )/* => Promise ? */ {
     "use strict";
+    console.log(description);
     actual_Results = clear_Links(
       mongoLab_URI,//:str
       collection_Name//:str
@@ -514,11 +516,93 @@ var test_6 = function(description){
     // actual_Results: Promise { <pending> }
     console.log("actual_Results:", actual_Results);
     // databaseName: 'sandbox_mongo-db_v3-0'
-    Promise.resolve(actual_Results.then((db) => {console.log("db:", db); db.close();}));
+    //Promise.resolve(
+      actual_Results.then((db) => {console.log("db:", db); db.close();});
+    //);
   };
-}("test 6: must drop collection & return current DB object")//;
-("tests");
+}("test 6: must drop collection & return current DB object");
+//("tests");
 
+var test_7 = function(description){
+  "use strict";
+  // curred
+  return function(
+    collection_Name//:str
+    ,db_Promise//:Promise obj
+  )/* => Promise ? */ {
+    "use strict";
+    console.log(description);
+    var actual_Results;
+    // case 2: db passed
+    db_Promise.then((db) => {
+      actual_Results = get_Collection(
+        mongoLab_URI,//:str
+        collection_Name//:str
+        ,db
+      );
+      console.log("typeof actual_Results:", (typeof actual_Results));
+      // actual_Results: Promise { collection }
+      console.log("actual_Results:", actual_Results);
+      // namespace: 'sandbox_mongo-db_v3-0.tests',
+      // name: 'tests',
+      // promiseLibrary: [Function: Promise],
+      /*
+      Promise
+        // `resolves` without `then`
+        .resolve(
+          actual_Results
+            //.then((col) => {console.log("col:", col);})
+      );
+      */
+      db.close();
+    }).catch((err) => {console.log("db_Promise then:", err.stack);}
+    );
+  };
+}("test 7: must return collection object from DB, when db passed");
+//("tests", get_DB(mongoLab_URI));
+//works but better use getter from above
+//("tests", clear_Links(mongoLab_URI, "tests"));
+
+var test_8 = function(description){
+  "use strict";
+  // curred
+  return function(
+    //collection_Name//:str
+    //,mongoLab_URI//:str
+    collection_Promise//:Promise obj
+    //,db_Promise//:Promise obj
+  )/* => Promise ? */ {
+    "use strict";
+    console.log(description);
+    var actual_Results;
+    // case 1: no db passed, db_URI only
+    /*
+    actual_Results = get_Collection(
+      mongoLab_URI,//:str
+      collection_Name//:str
+      //,db
+    );
+    actual_Results*/
+    collection_Promise
+    .then((collection) => {
+
+      console.log("collection:", collection);
+      //console.log("typeof actual_Results:", (typeof actual_Results));
+      // namespace: 'sandbox_mongo-db_v3-0.tests',
+      // name: 'tests',
+      // promiseLibrary: [Function: Promise],
+      //console.log("collection.db:%j", collection.db);
+      // TypeError: Cannot read property 'close' of undefined
+      //collection.db.close();
+      //collection.s.db.close();
+      var db = collection.s.db;
+      db.close();
+    }).catch((err) => {console.log("collection_Promise then:", err.stack);}
+    );
+  };
+}("test 8: must return collection object from DB, when no db passed")//;
+(get_Collection(mongoLab_URI, "tests"));
+//("tests", mongoLab_URI);
 /*** tests end ***/
 
 //***#####################################################################***//
@@ -769,30 +853,6 @@ if (
 ) {
   // case 1: no db passed
   // actual_Results: Promise { undefined }
-  actual_Results = //Promise
-    //.resolve(
-    //.all([
-      get_Collection(
-        mongoLab_URI,//:str
-        "tests"//:str
-      )
-      /**/
-      .then((col) => {
-      //.then(function(col) {
-            console.log("col:", col);
-            console.log("actual_Results:", actual_Results);
-
-            return col;
-            //return Promise.resolve(col);
-            //return {"collection": col};
-          }
-      )
-      .catch((err) => {console.log("get_Collection.then err:", err.stack);}
-    //)
-    /**/
-    //]
-  );
-  console.log("typeof actual_Results:", (typeof actual_Results));
   // actual_Results: Promise { <pending> }
   /*
   Internally, a promise can be in one of three states:
@@ -906,32 +966,4 @@ if (
       */
   ///);
 }
-if (
-  //true
-  //false
-  0 == 1
-) {
-  // case 2: db passed
-  clear_Links(
-    mongoLab_URI,//:str
-    "tests"//:str
-  ).then((db) => {
-    actual_Results = get_Collection(
-      mongoLab_URI,//:str
-      "tests"//:str
-      ,db
-    );
-    console.log("typeof actual_Results:", (typeof actual_Results));
-    // actual_Results: Promise { collection }
-    console.log("actual_Results:", actual_Results);
-    // namespace: 'sandbox_mongo-db_v3-0.tests',
-    // name: 'tests',
-    // promiseLibrary: [Function: Promise],
-    Promise
-      // `resolves` without `then`
-      .resolve(
-        actual_Results
-          //.then((col) => {console.log("col:", col);})
-    );
-  });
-}
+
