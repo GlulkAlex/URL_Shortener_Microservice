@@ -78,311 +78,164 @@ function make_Links_Documents(
   return results;
 }
 
-// useless, nothing different form MongoClient.connect
-function get_DB(
-  mongoLab_URI//: str
-)/* => Promise(db) */{
-  "use strict";
-
-  var connection = MongoClient.connect(mongoLab_URI);//, function(err, db) {
-
-  // Promise <pending> -> thanble
-  //return Promise.resolve(connection.then((db) => {return db;}));
-  return connection.then((db) => {return db;});
-}
-
-function get_Collection(
-  mongoLab_URI//:str
-  ,collection_Name//:str
-  ,db//: obj [db] <- optional
-)/* => Promise(collection) */{
-  "use strict";
-
-  if (db) {
-    return Promise
-      .resolve(
-        //() => {
-          //var collection =
-          db.collection(collection_Name)//;
-
-          //return collection;
-        //}
-    );
-  } else {
-    //var connection = MongoClient.connect(mongoLab_URI);//, function(err, db) {
-    collection_Name = collection_Name ? collection_Name : 'tests';
-    //db = Promise.resolve(get_DB(mongoLab_URI));
-    //db = Promise.resolve(get_DB(mongoLab_URI).then((dB) => {return dB;}));
-
-    //db.collections(function(err, collections) {
-    // ? Promise <pending> ?
-    // without .resolve
-    // typeof return: undefined
-    // something like .flatMap needed ? or just db.close() in the right place ?
-    // CORRECT (the function returns a promise, and the caller will handle the rejection)
-    // Resolving with `thenables` to flatten nested then() calls
-    return Promise.resolve(
-      //connection
-        //.then((db) => {return db;})
-      get_DB(mongoLab_URI)
-        .then((db) => {
-        // defined `this` does not make any changes on `pending`
-        //.then(function(db) {
-            // Create a collection we want to drop later
-            // Returns:
-            // the new Collection instance if not in strict mode
-            //db.collection('test_correctly_access_collections', {strict:true}, function(err, col3) {
-            //var collection = db.collection(collection_Name);
-
-            // not helping, still having
-            // return: Promise { <pending> }
-            //return Promise.resolve(collection);
-            ///return Promise.resolve((c) => {return c;});
-            //return collection;
-            /*
-            // works but give the same results / behaviour as before / above
-            return db
-              .collection(
-                collection_Name
-                //, {strict:true}
-                , function(err, col) {
-                  if (err) {
-                    return Promise.reject(err);
-                  } else {
-                    return Promise.resolve(col);
-                  }
-                }
-            );
-            */
-            /*
-            // works but give the same results / behaviour as before / above
-            return new Promise(
-              function(resolve, reject) {
-                db
-                .collection(
-                  collection_Name
-                  //, {strict:true}
-                  , function(err, col) {
-                    if (err) {
-                      reject(err);
-                    } else {
-                      resolve(col);
-                    }
-                });
-            });
-            */
-            return db.collection(collection_Name);
-          }
-      )
-      // work, but changes nothing
-      //.then((collection) => {return collection;})
-      // TypeError: db.collection is not a function
-      //db.collection(collection_Name)
-    );
-  }
-}
-
-function clear_Links(
-  mongoLab_URI,//: str
-  collection_Name//: str
-)/* => Promise(db) */{
-  "use strict";
-
-  var connection = MongoClient.connect(mongoLab_URI);//, function(err, db) {
-  collection_Name = collection_Name ? collection_Name : 'tests';
-
-  // Promise <pending> -> thanble
-  return Promise.resolve(
-    connection
-      .then((db) => {
-        // Create a collection we want to drop later
-        // Returns:
-        // the new Collection instance if not in strict mode
-        //var collection = db.collection(collection_Name);
-        //var collection =
-        db.collection(
-          collection_Name,
-          {strict: true},
-          (err, col) => {
-            if (err) {
-              console.log("collection:", collection_Name, " not exist in db");
-              console.log("nothing to drop from db");
-              db.close();
-
-              //return undefined;
-            } else {
-              console.log("collection:", collection_Name, " exist in db");
-              console.log("collection:", collection_Name, " about to drop from db");
-              // Drop the collection
-              //var drop = collection.drop();//function(err, reply) {
-              var drop = db.dropCollection(collection_Name);//, function(err, result) {
-
-              drop
-                .then((reply) => {
-                  // Verify that the collection is gone
-                  //db.listCollections({name:collection_Name}).toArray().then((names) => {
-                  //  assert.equal(0, names.length);
-                  console.log("drop reply is:", reply);
-                  // Let's close the db
-                  db.close();
-                }
-                ).catch((err) => {
-                  // MongoError: ns not found
-                  console.log("drop err:", err.stack);}
-              );
-
-              //return col;
-            }
-          }
-        );
-
-        return db;
-      }
-      ).catch((err) => {console.log("connection err:", err.stack);}
-    )
-  );
-};
-
-function create_Unique_Index(
-  //mongoLab_URI//:str
-  //,collection_Name//:str
-  collection//: obj [collection]
-  ,field_Name//:str
-)/* => Promise */{
-  "use strict";
-
-  //var collection = get_Collection(
-  //  mongoLab_URI,//:str
-  //  collection_Name ? collection_Name : 'tests'//:str
-  //);
-  if (collection) {
-    return Promise.resolve(
-      //clear.then err: ReferenceError: collection is not defined
-      // Create an index on the a field
-      collection
-        // TypeError: collection.createIndex is not a function
-        .createIndex(
-          {field_Name:1}
-          , {unique:true, background:true, w:1}
-        )
-        .then((indexName) => {
-            console.log("indexName:", indexName, "for", field_Name, "field created");
-
-            return collection;// ? for further .then() ?
-          }
-        ).catch((err) => {
-            console.log("connection err:", err.code);
-            console.log(err.stack);
-          }
-      )
-    );
-  } else {
-    console.log("collection undefined ?:", collection);
-  }
-};
-
-function add_Docs(
-  //mongoLab_URI//:str
-  documents//:list of obj
-  //,collection_Name//:str
-  ,collection//: obj [collection]
-)/* => Promise(result) */{
-  "use strict";
-
-  //var collection = get_Collection(
-  //  mongoLab_URI//:str
-  //  ,(collection_Name ? collection_Name : 'tests')//:str
-  //);
-
-  // ? Promise <pending> ?
-  return Promise.resolve(
-    collection
-      .insertMany(documents)//, function(err, r) {
-      .then((result) => {
-            console.log("added:", result.insertedCount, "documents to ", collection_Name);
-            // Let's close the db
-            db.close();
-
-
-            //return Promise.resolve(result);
-            return result;
-          }
-        ).catch((err) => {
-            // MongoError: ns (name space -> <db.collection>) not found
-            console.log("insertMany err:", err.code);
-            console.log(err.stack);
-          }
-      )
-  );
-};
 /*** helpers end ***/
 
 /*** tests ***/
-var test_1 = function(
-  description//:str
-  ,hosts//:list
-) {
+var actual_Results;
+var expected_Results;
+// case 1: valid host names
+var hosts_case_1 = [
+  "mongodb.github.io",
+  "node-mongodb-native.api",
+  "en.wikipedia.org",
+  "nodejs.org",
+  "github.com",
+  "www.w3schools.com",
+  "www.xn----7sbajojiclh2ahkc2br7fc0m.xn--p1ai"
+];
+expected_Results = [
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+];
+// case 2: invalid host names
+var hosts_case_2 = [
+  "mongodb..github.io",
+  "-node-mongodb-native.api",
+  "en.wikipedia.org-",
+  "nodejsorg",
+  "?github.com",
+  "www.-w3schools.com",
+  "www.xn----7sbajojiclh2ahkc2br7fc0m.xn--p1ai%"
+];
+var expected_Results_case_2 = [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+];
+var test_1 = function(description){
   "use strict";
-  console.log(description);
-  var hosts_Length = hosts.length;
-  var host_Index = 0;
-  var host;
-  var results = [];
-  var result;
+  // curred
+  return function(
+    hosts//:list of str
+    ,expected_Results//:list of bool
+  )/* => list of bool */ {
+    "use strict";
+    console.log(description);
 
-  //for (host_Index in hosts) {
-  //  host = hosts[host_Index];
-  hosts.forEach((host) => {
-      //validate_Host_Name
-      result = host_Name_Validator.is_Host_Name_Valid(host);
-      results.push(result);
-      console.log("is ", host,"a valid host name:", result);
-    }
-  );
+    var hosts_Length = hosts.length;
+    var host_Index = 0;
+    var host;
+    var results = [];
+    var result;
 
-  return results;
-};
-//}("test 1: must check for a valid host name");
+    //for (host_Index in hosts) {
+    //  host = hosts[host_Index];
+    hosts.forEach((host) => {
+        //validate_Host_Name
+        result = host_Name_Validator.is_Host_Name_Valid(host);
+        results.push(result);
+        console.log("is ", host,"a valid host name:", result);
+      }
+    );
+
+    //assert.equal({a: {b: 1}}, {a: {b: 1}});
+    //AssertionError: [ true, true, true, true, true, true, true ] == [ true, true, true, true, true, true, true ]
+    //actual_Results = results
+    assert.deepEqual(results, expected_Results);
+
+    return results;
+  };
+}("test 1: must check for a valid host name");
+//(hosts_case_1, expected_Results);
+//(hosts_case_2, expected_Results_case_2);
 
 // DONE 1.drop collection
 // DONE 2.dummy data generator
 // DONE 3.insert generated data
-var test_2 = function(
-  description//:str
-) {
+var docs_List = [
+  {"original_url" : "o_L_0", "short_url" : "a"}
+  ,{"original_url" : "o_L_0", "short_url" : "a"}
+  ,{"original_url" : "o_L_0", "short_url" : "a"}
+  ,{"original_url" : "o_L_1", "short_url" : "yY"}
+];
+var bulk_Docs_List = [
+  { "insertOne": { "document": {"original_url" : "o_L_0", "short_url" : "a"} } }
+  ,{ "insertOne": { "document": {"original_url" : "o_L_0", "short_url" : "a"} } }
+  ,{ "insertOne": { "document": {"original_url" : "o_L_0", "short_url" : "a"} } }
+  ,{ "insertOne": { "document": {"original_url" : "o_L_1", "short_url" : "yY"} } }
+];
+var test_2 = function(description){
   "use strict";
-  console.log(description);
-  var result;
-  var results = [];
-  var docs_Number = 7;
-  var documents = [];
+  // curred
+  return function(
+    mongoLab_URI//:str
+    ,collection_Name//:str
+    ,documents//:list of obj
+    //,indexes_List//:list of str
+  )/* => Promise ? */ {
+    "use strict";
+    console.log(description);
 
-  console.log("mongoLab_URI is:", mongoLab_URI);
-  documents = make_Links_Documents(docs_Number);
-  console.log("results: %j", documents);
-  //"tests"
-  var clear = clear_Links(mongoLab_URI, "tests");
-  //console.log("typeof clear:", (typeof clear));
-  //console.log("clear instanceof Promise:", (clear instanceof Promise));
+    var result;
+    var results = [];
+    var docs_Number = 7;
+    //var documents = [];
 
-  clear
-    // clear.then err: undefined
-    .then(() => {
-      add_Docs(
-        documents,//:list of obj
-        "tests"//:str
+    //console.log("mongoLab_URI is:", mongoLab_URI);
+    //documents = make_Links_Documents(docs_Number);
+    console.log("documents: %j", documents);
+    if (Array.isArray(documents)) {
+      if (documents.length > 0) {
+      } else {
+        return results;
+      }
+      //"tests"
+      //var clear = clear_Links(mongoLab_URI, "tests");
+      //console.log("typeof clear:", (typeof clear));
+      //console.log("clear instanceof Promise:", (clear instanceof Promise));
+      //var connection_Promise = MongoClient.connect(mongoLab_URI);
+      var collection_Promise = Promise.resolve(db_Helpers.get_Collection(
+        mongoLab_URI//:str
+        ,collection_Name
+        ,null
+        ,MongoClient
+        )
+      );
+
+      //connection_Promise
+      //  .then((db) => {
+      collection_Promise
+        .then((collection) => {
+            console.log("collection: %j", collection);
+            db_Helpers.add_Docs(
+              documents,//:list of obj
+              collection
+            );
+          }
+        ).catch((err) => {
+          console.log("collection_Promise.then err:", err.code);
+          console.log(err.stack);
+        }
       );
     }
-    ).catch((err) => {
-      console.log("clear.then err:", err.code);
-      console.log(err.stack);
-    }
-  );
 
 
-  //return results;
-};
+    //return results;
+  };
 //}("test 2: must drop existing collection, create new one & insert list of documents to it in DB");
+}("test 2: must insert list of documents to collection in DB")//;
+//(mongoLab_URI, "tests", docs_List);
+(mongoLab_URI, "tests", bulk_Docs_List);
+
 
 var test_3 = function(
   description//:str
@@ -471,6 +324,47 @@ var  docs_Case_1 = [
   ,{"original_url" : "o_L_3", "short_url" : "c"}
   ,{"original_url" : "o_L_4", "short_url" : "vV"}
 ];
+// case 2: some docs -> unique
+/*
+db.tests.createIndex({"original_url": 1}, {"unique": true});
+db.tests.createIndex({"short_url": 1}, {"unique": true});
+db.tests.createIndex({"original_url": 1, "short_url": 1}, {"unique": true});
+db.tests.insert({"original_url" : "o_L_0", "short_url" : "a"});
+db.tests.insert(
+   [
+     {"original_url" : "o_L_0", "short_url" : "a"}
+    ,{"original_url" : "o_L_0", "short_url" : "a"}
+    ,{"original_url" : "o_L_1", "short_url" : "c"}
+    ,{"original_url" : "o_L_2", "short_url" : "gG"}
+   ],
+   { ordered: false }
+);
+*/
+var  docs_Case_2 = [
+  {"original_url" : "o_L_0", "short_url" : "a"}
+  ,{"original_url" : "o_L_0", "short_url" : "a"}
+  ,{"original_url" : "o_L_1", "short_url" : "c"}
+  ,{"original_url" : "o_L_2", "short_url" : "gG"}
+];
+// case 3: one doc -> unique
+/*
+db.tests.createIndex({"short_url": 1, "unique": true});
+db.tests.insert(
+   [
+     {"original_url" : "o_L_0", "short_url" : "a"}
+    ,{"original_url" : "o_L_0", "short_url" : "a"}
+    ,{"original_url" : "o_L_0", "short_url" : "a"}
+    ,{"original_url" : "o_L_1", "short_url" : "yY"}
+   ],
+   { ordered: false }
+);
+*/
+var  docs_Case_3 = [
+  {"original_url" : "o_L_0", "short_url" : "a"}
+  ,{"original_url" : "o_L_0", "short_url" : "a"}
+  ,{"original_url" : "o_L_0", "short_url" : "a"}
+  ,{"original_url" : "o_L_1", "short_url" : "yY"}
+];
 var test_5 = function(description){
   "use strict";
   // curred
@@ -479,6 +373,7 @@ var test_5 = function(description){
     ,collection_Name//:str
     ,documents//:list of obj
     ,indexes_List//:list of str
+    ,MongoClient//: MongoClient obj <- explicit
   )/* => Promise ? */ {
     "use strict";
     console.log(description);
@@ -490,16 +385,18 @@ var test_5 = function(description){
     //results = make_Links_Documents(7);
     //console.log("results: %j", results);
     //"tests"
-    var clear = clear_Links(mongoLab_URI, collection_Name);
+    var clear = db_Helpers.clear_Links(mongoLab_URI, collection_Name, MongoClient);
     //console.log("typeof clear:", (typeof clear));
     //console.log("clear instanceof Promise:", (clear instanceof Promise));
 
     clear
       .then((db) => {
-          var collection_Promise = get_Collection(
+          // ? is it same (one / singleton) db object ?
+          var collection_Promise = db_Helpers.get_Collection(
             mongoLab_URI,//:str
             collection_Name//:str
             ,db
+            ,MongoClient
           );
           //console.log("typeof collection:", (typeof collection));
           //console.log("collection instanceof Promise:", (collection instanceof Promise));
@@ -507,7 +404,7 @@ var test_5 = function(description){
 
           collection_Promise
             .then((collection) => {
-                create_Unique_Index(
+                db_Helpers.create_Unique_Index(
                   //"tests"//:str
                   //collection_Name
                   collection
@@ -518,7 +415,16 @@ var test_5 = function(description){
                     // Retrieve all the indexes on the collection.
                     collection
                       .indexes()
-                      .then((indexes) => {console.log("collection.indexes:%j", indexes);});
+                      .then((indexes) => {
+                          console.log("collection.indexes:%j", indexes);
+                          // Let's close the db
+                          // something pending & prevent from properly close(ing) db
+                          collection.s.db.close();
+                          // TypeError: Cannot read property 'close' of undefined
+                          //db.close();
+                        }
+                      ).catch((err) => {console.log("collection.indexes.then err:", err.stack);}
+                    );
                   }
                 )
               }
@@ -546,8 +452,8 @@ var test_5 = function(description){
 
     //return results;
   };
-}("test 5: must drop collection, then create unique index in the new collection")//;
-(mongoLab_URI, "tests", docs_Case_1);
+}("test 5: must drop collection, then create unique index in the new collection");
+//(mongoLab_URI, "tests", docs_Case_1, null, MongoClient);
 
 var test_6 = function(description){
   "use strict";
@@ -558,7 +464,7 @@ var test_6 = function(description){
   )/* => Promise ? */ {
     "use strict";
     console.log(description);
-    actual_Results = clear_Links(
+    actual_Results = db_Helpers.clear_Links(
       mongoLab_URI,//:str
       collection_Name//:str
     );
@@ -585,7 +491,7 @@ var test_7 = function(description){
     var actual_Results;
     // case 2: db passed
     db_Promise.then((db) => {
-      actual_Results = get_Collection(
+      actual_Results = db_Helpers.get_Collection(
         mongoLab_URI,//:str
         collection_Name//:str
         ,db
@@ -609,9 +515,9 @@ var test_7 = function(description){
     );
   };
 }("test 7: must return collection object from DB, when db passed");
-//("tests", get_DB(mongoLab_URI));
+//("tests", db_Helpers.get_DB(mongoLab_URI));
 //works but better use getter from above
-//("tests", clear_Links(mongoLab_URI, "tests"));
+//("tests", db_Helpers.clear_Links(mongoLab_URI, "tests"));
 
 var test_8 = function(description){
   "use strict";
@@ -651,14 +557,12 @@ var test_8 = function(description){
     );
   };
 }("test 8: must return collection object from DB, when no db passed");
-//(get_Collection(mongoLab_URI, "tests"));
+//(db_Helpers.get_Collection(mongoLab_URI, "tests"));
 //("tests", mongoLab_URI);
 /*** tests end ***/
 
 //***#####################################################################***//
 /*** unit test (main) ***/
-var actual_Results;
-var expected_Results;
 var run_Tests = [
   {"test": 1, "run": 0}
   ,{"test": 2, "run": 0}
@@ -672,52 +576,7 @@ if (
   //true
   //false
 ) {
-  // case 1: valid host names
-  actual_Results = test_1(
-    [
-      "mongodb.github.io",
-      "node-mongodb-native.api",
-      "en.wikipedia.org",
-      "nodejs.org",
-      "github.com",
-      "www.w3schools.com",
-      "www.xn----7sbajojiclh2ahkc2br7fc0m.xn--p1ai"
-    ]
-  );
-  expected_Results = [
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-  ];
-  //assert.equal({a: {b: 1}}, {a: {b: 1}});
-  //AssertionError: [ true, true, true, true, true, true, true ] == [ true, true, true, true, true, true, true ]
-  assert.deepEqual(actual_Results, expected_Results);
-  // case 2: invalid host names
-  actual_Results = test_1(
-    [
-      "mongodb..github.io",
-      "-node-mongodb-native.api",
-      "en.wikipedia.org-",
-      "nodejsorg",
-      "?github.com",
-      "www.-w3schools.com",
-      "www.xn----7sbajojiclh2ahkc2br7fc0m.xn--p1ai%"
-    ]
-  );
-  expected_Results = [
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-  ];
-  assert.deepEqual(actual_Results, expected_Results);
+  //assert.deepEqual(actual_Results, expected_Results);
 }
 if (
   //true
@@ -754,75 +613,7 @@ if (
   // or (same as)
   assert.equal(actual_Results, expected_Results);
 }
-if (
-  //true
-  //false
-  1 == 0
-) {
-  // case 2: some docs -> unique
-  /*
-  db.tests.createIndex({"original_url": 1}, {"unique": true});
-  db.tests.createIndex({"short_url": 1}, {"unique": true});
-  db.tests.createIndex({"original_url": 1, "short_url": 1}, {"unique": true});
-  db.tests.insert({"original_url" : "o_L_0", "short_url" : "a"});
-  db.tests.insert(
-     [
-       {"original_url" : "o_L_0", "short_url" : "a"}
-      ,{"original_url" : "o_L_0", "short_url" : "a"}
-      ,{"original_url" : "o_L_1", "short_url" : "c"}
-      ,{"original_url" : "o_L_2", "short_url" : "gG"}
-     ],
-     { ordered: false }
-  );
-  */
-  //actual_Results =
-  test_5(
-    "tests"//:str
-    ,[
-      {"original_url" : "o_L_0", "short_url" : "a"}
-      ,{"original_url" : "o_L_0", "short_url" : "b"}
-      ,{"original_url" : "o_L_0", "short_url" : "c"}
-      ,{"original_url" : "o_L_0", "short_url" : "vV"}
-    ]
-   );
-  //expected_Results = false;
-  //assert(actual_Results == expected_Results);
-  // or (same as)
-  //assert.equal(actual_Results, expected_Results);
-}
-if (
-  //true
-  //false
-  1 == 0
-) {
-  // case 3: one doc -> unique
-  /*
-  db.tests.createIndex({"short_url": 1, "unique": true});
-  db.tests.insert(
-     [
-       {"original_url" : "o_L_0", "short_url" : "a"}
-      ,{"original_url" : "o_L_0", "short_url" : "a"}
-      ,{"original_url" : "o_L_0", "short_url" : "a"}
-      ,{"original_url" : "o_L_1", "short_url" : "yY"}
-     ],
-     { ordered: false }
-  );
-  */
-  //actual_Results =
-  test_5(
-    "tests"//:str
-    ,[
-      {"original_url" : "o_L_0", "short_url" : "a"}
-      ,{"original_url" : "o_L_0", "short_url" : "a"}
-      ,{"original_url" : "o_L_0", "short_url" : "a"}
-      ,{"original_url" : "o_L_0", "short_url" : "vV"}
-    ]
-   );
-  //expected_Results = false;
-  //assert(actual_Results == expected_Results);
-  // or (same as)
-  //assert.equal(actual_Results, expected_Results);
-}
+
 if (
   //true
   //false
