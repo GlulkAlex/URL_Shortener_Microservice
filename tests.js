@@ -315,11 +315,11 @@ function add_Docs(
 
 /*** tests ***/
 var test_1 = function(
-  //urls//:list
-  hosts//:list
+  description//:str
+  ,hosts//:list
 ) {
   "use strict";
-
+  console.log(description);
   var hosts_Length = hosts.length;
   var host_Index = 0;
   var host;
@@ -329,38 +329,43 @@ var test_1 = function(
   //for (host_Index in hosts) {
   //  host = hosts[host_Index];
   hosts.forEach((host) => {
-    //validate_Host_Name
-    result = host_Name_Validator.is_Host_Name_Valid(host);
-    results.push(result);
-    console.log("is ", host,"a valid name:", result);
-  }
+      //validate_Host_Name
+      result = host_Name_Validator.is_Host_Name_Valid(host);
+      results.push(result);
+      console.log("is ", host,"a valid host name:", result);
+    }
   );
 
   return results;
 };
+//}("test 1: must check for a valid host name");
+
 // DONE 1.drop collection
 // DONE 2.dummy data generator
 // DONE 3.insert generated data
 var test_2 = function(
-  //urls//:list
+  description//:str
 ) {
   "use strict";
-
+  console.log(description);
   var result;
   var results = [];
+  var docs_Number = 7;
+  var documents = [];
 
   console.log("mongoLab_URI is:", mongoLab_URI);
-  results = make_Links_Documents(7);
-  console.log("results: %j", results);
+  documents = make_Links_Documents(docs_Number);
+  console.log("results: %j", documents);
   //"tests"
   var clear = clear_Links(mongoLab_URI, "tests");
   //console.log("typeof clear:", (typeof clear));
   //console.log("clear instanceof Promise:", (clear instanceof Promise));
 
   clear
+    // clear.then err: undefined
     .then(() => {
       add_Docs(
-        results,//:list of obj
+        documents,//:list of obj
         "tests"//:str
       );
     }
@@ -371,14 +376,15 @@ var test_2 = function(
   );
 
 
-  return results;
+  //return results;
 };
+//}("test 2: must drop existing collection, create new one & insert list of documents to it in DB");
 
 var test_3 = function(
-  //urls//:list
+  description//:str
 ) {
   "use strict";
-
+  console.log(description);
   var result;
   var results = [];
   var filtered = [];
@@ -392,13 +398,15 @@ var test_3 = function(
 
   return result;
 };
+//}("test 3: choose_Options must be non-empty");
 
 var test_4 = function(
-  link_Size,//:int
-  links_Total//:int
+  description
+  ,link_Size//:int
+  ,links_Total//:int
 ) {
   "use strict";
-
+  console.log(description);
   var result;
   var results = [];
   var filtered = [];
@@ -425,17 +433,23 @@ var test_4 = function(
   console.log("filtered results: %j", filtered);
   result = filtered.length > 0;
 
+  var actual_Results = result;//test_4(1, 150000);
+  var expected_Results = false;
+  //assert(actual_Results == expected_Results);
+  // or (same as)
+  assert.equal(actual_Results, expected_Results);
 
   return result;
-};
+};//("test 4: all links must be non-empty", 1, 150000);/*() <- on / off */
 
 var test_5 = function(
-  collection_Name//:str
+  description
+  ,collection_Name//:str
   ,documents//:list of obj
   ,indexes_List//:list of str
 )/* => Promise ? */ {
   "use strict";
-
+  console.log(description);
   var result;
   var results = [];
 
@@ -481,7 +495,29 @@ var test_5 = function(
 
 
   //return results;
-};
+};//("test 5: ", null, null, null);
+
+var test_6 = function(description){
+  "use strict";
+  console.log(description);
+  // curred
+  return function(
+    collection_Name//:str
+    //,documents//:list of obj
+  )/* => Promise ? */ {
+    "use strict";
+    actual_Results = clear_Links(
+      mongoLab_URI,//:str
+      collection_Name//:str
+    );
+    console.log("typeof actual_Results:", (typeof actual_Results));
+    // actual_Results: Promise { <pending> }
+    console.log("actual_Results:", actual_Results);
+    // databaseName: 'sandbox_mongo-db_v3-0'
+    Promise.resolve(actual_Results.then((db) => {console.log("db:", db); db.close();}));
+  };
+}("test 6: must drop collection & return current DB object")//;
+("tests");
 
 /*** tests end ***/
 
@@ -590,6 +626,60 @@ if (
   1 == 0
 ) {
   // case 1: all docs -> unique
+  /*
+  db.tests.createIndex(
+        {short_url: 1}
+        ,{
+          background: true
+          ,unique: true
+        }
+  );
+  db.tests.insert(
+     [
+       {"original_url" : "o_L_0", "short_url" : "a"}
+      ,{"original_url" : "o_L_1", "short_url" : "b"}
+      ,{"original_url" : "o_L_2", "short_url" : "c"}
+      ,{"original_url" : "o_L_3", "short_url" : "vV"}
+     ],
+     { ordered: false }
+  );
+  */
+  //actual_Results =
+  test_5(
+    "tests"//:str
+    ,[
+      {"original_url" : "o_L_1", "short_url" : "a"}
+      ,{"original_url" : "o_L_2", "short_url" : "b"}
+      ,{"original_url" : "o_L_3", "short_url" : "c"}
+      ,{"original_url" : "o_L_4", "short_url" : "vV"}
+    ]
+   );
+  //expected_Results = false;
+  //assert(actual_Results == expected_Results);
+  // or (same as)
+  //assert.equal(actual_Results, expected_Results);
+}
+if (
+  //true
+  //false
+  1 == 0
+) {
+  // case 2: some docs -> unique
+  /*
+  db.tests.createIndex({"original_url": 1}, {"unique": true});
+  db.tests.createIndex({"short_url": 1}, {"unique": true});
+  db.tests.createIndex({"original_url": 1, "short_url": 1}, {"unique": true});
+  db.tests.insert({"original_url" : "o_L_0", "short_url" : "a"});
+  db.tests.insert(
+     [
+       {"original_url" : "o_L_0", "short_url" : "a"}
+      ,{"original_url" : "o_L_0", "short_url" : "a"}
+      ,{"original_url" : "o_L_1", "short_url" : "c"}
+      ,{"original_url" : "o_L_2", "short_url" : "gG"}
+     ],
+     { ordered: false }
+  );
+  */
   //actual_Results =
   test_5(
     "tests"//:str
@@ -597,6 +687,39 @@ if (
       {"original_url" : "o_L_0", "short_url" : "a"}
       ,{"original_url" : "o_L_0", "short_url" : "b"}
       ,{"original_url" : "o_L_0", "short_url" : "c"}
+      ,{"original_url" : "o_L_0", "short_url" : "vV"}
+    ]
+   );
+  //expected_Results = false;
+  //assert(actual_Results == expected_Results);
+  // or (same as)
+  //assert.equal(actual_Results, expected_Results);
+}
+if (
+  //true
+  //false
+  1 == 0
+) {
+  // case 3: one doc -> unique
+  /*
+  db.tests.createIndex({"short_url": 1, "unique": true});
+  db.tests.insert(
+     [
+       {"original_url" : "o_L_0", "short_url" : "a"}
+      ,{"original_url" : "o_L_0", "short_url" : "a"}
+      ,{"original_url" : "o_L_0", "short_url" : "a"}
+      ,{"original_url" : "o_L_1", "short_url" : "yY"}
+     ],
+     { ordered: false }
+  );
+  */
+  //actual_Results =
+  test_5(
+    "tests"//:str
+    ,[
+      {"original_url" : "o_L_0", "short_url" : "a"}
+      ,{"original_url" : "o_L_0", "short_url" : "a"}
+      ,{"original_url" : "o_L_0", "short_url" : "a"}
       ,{"original_url" : "o_L_0", "short_url" : "vV"}
     ]
    );
@@ -643,21 +766,6 @@ if (
   //true
   //false
   0 == 1
-) {
-  actual_Results = clear_Links(
-    mongoLab_URI,//:str
-    "tests"//:str
-  );
-  console.log("typeof actual_Results:", (typeof actual_Results));
-  // actual_Results: Promise { <pending> }
-  console.log("actual_Results:", actual_Results);
-  // databaseName: 'sandbox_mongo-db_v3-0'
-  Promise.resolve(actual_Results.then((db) => {console.log("db:", db);}));
-}
-if (
-  //true
-  //false
-  1 == 1
 ) {
   // case 1: no db passed
   // actual_Results: Promise { undefined }

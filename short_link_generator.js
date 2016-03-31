@@ -101,6 +101,10 @@ function short_Link_Generator(
     // Math.log(x)	Returns the natural logarithm (base E) of x
     short_Link_Length = short_Link_Size;
   }    
+  if (options_List == undefined){
+    options_List = choose_Options.symbols_List;
+    //console.log("is_Debug_Mode:", is_Debug_Mode);
+  }
   if (is_Debug_Mode == undefined){
     is_Debug_Mode = process.argv[2] || false; 
     //console.log("is_Debug_Mode:", is_Debug_Mode);  
