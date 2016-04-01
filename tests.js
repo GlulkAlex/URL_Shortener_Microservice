@@ -167,10 +167,18 @@ var docs_List = [
   ,{"original_url" : "o_L_0", "short_url" : "a"}
   ,{"original_url" : "o_L_1", "short_url" : "yY"}
 ];
+// case 2: some docs -> unique
 var bulk_Docs_List = [
   { "insertOne": { "document": {"original_url" : "o_L_0", "short_url" : "a"} } }
   ,{ "insertOne": { "document": {"original_url" : "o_L_0", "short_url" : "a"} } }
   ,{ "insertOne": { "document": {"original_url" : "o_L_0", "short_url" : "a"} } }
+  ,{ "insertOne": { "document": {"original_url" : "o_L_1", "short_url" : "yY"} } }
+];
+// case 2: some docs -> unique
+var bulk_Docs_List_2 = [
+  { "insertOne": { "document": {"original_url" : "o_L_0", "short_url" : "b"} } }
+  ,{ "insertOne": { "document": {"original_url" : "o_L_2", "short_url" : "a"} } }
+  ,{ "insertOne": { "document": {"original_url" : "o_L_3", "short_url" : "c"} } }
   ,{ "insertOne": { "document": {"original_url" : "o_L_1", "short_url" : "yY"} } }
 ];
 var test_2 = function(description){
@@ -232,10 +240,58 @@ var test_2 = function(description){
     //return results;
   };
 //}("test 2: must drop existing collection, create new one & insert list of documents to it in DB");
-}("test 2: must insert list of documents to collection in DB")//;
+}("test 2: must insert list of documents to collection in DB");
 //(mongoLab_URI, "tests", docs_List);
-(mongoLab_URI, "tests", bulk_Docs_List);
+//(mongoLab_URI, "tests", bulk_Docs_List);
 
+var test_2_1 = function(description){
+  "use strict";
+  // curred
+  return function(
+    MongoClient//: MongoClient obj <- explicit
+    ,mongoLab_URI//:str
+    ,collection_Name//:str
+    ,documents//:list of obj
+  )/* => Promise ? */ {
+    "use strict";
+    console.log(description);
+
+    var result;
+    var results = [];
+
+    //console.log("mongoLab_URI is:", mongoLab_URI);
+    console.log("documents: %j", documents);
+    var db_Promise = //Promise
+      //.resolve(
+        db_Helpers
+          .bulk_Docs_Insert(
+            MongoClient//: MongoClient obj <- explicit
+            ,mongoLab_URI//: str
+            ,collection_Name//: str
+            ,documents//:list of obj
+        //)
+    );
+    console.log("db_Promise instanceof Promise:", (db_Promise instanceof Promise));
+
+    return db_Promise;
+      /*.then((db) => {
+          console.log("closing db");
+          db.close;
+          console.log("db instanceof Promise:", (db instanceof Promise));
+          console.log("typeof db:", (typeof db));
+        }
+      ).catch((err) => {
+          console.log("db_Promise.then() err:", err.code);
+          console.log(err.stack);
+        }*/
+    //);
+
+
+    //return results;
+  };
+}("test 2.1: must insert list of documents to collection in DB using bulkWrite()")//;
+//(MongoClient, mongoLab_URI, "tests", bulk_Docs_List);
+(MongoClient, mongoLab_URI, "tests", bulk_Docs_List_2);
 
 var test_3 = function(
   description//:str
@@ -372,7 +428,8 @@ var test_5 = function(description){
     mongoLab_URI//:str
     ,collection_Name//:str
     ,documents//:list of obj
-    ,indexes_List//:list of str
+    //,indexes_List//:list of str
+    ,field_Name//:str
     ,MongoClient//: MongoClient obj <- explicit
   )/* => Promise ? */ {
     "use strict";
@@ -389,28 +446,36 @@ var test_5 = function(description){
     //console.log("typeof clear:", (typeof clear));
     //console.log("clear instanceof Promise:", (clear instanceof Promise));
 
+    ///return //Promise.resolve(
     clear
       .then((db) => {
           // ? is it same (one / singleton) db object ?
-          var collection_Promise = db_Helpers.get_Collection(
-            mongoLab_URI,//:str
-            collection_Name//:str
-            ,db
-            ,MongoClient
+          var collection_Promise = ///Promise.resolve(
+          db_Helpers
+            .get_Collection(
+              mongoLab_URI,//:str
+              collection_Name//:str
+              ,db
+              ,MongoClient
+          ///)
           );
           //console.log("typeof collection:", (typeof collection));
           //console.log("collection instanceof Promise:", (collection instanceof Promise));
           //console.log("collection Promise status:", collection);
 
+          ///return ///Promise.resolve(
           collection_Promise
             .then((collection) => {
-                db_Helpers.create_Unique_Index(
-                  //"tests"//:str
-                  //collection_Name
-                  collection
-                  ,"short_url"//:str
+                db_Helpers
+                  .create_Unique_Index(
+                    //"tests"//:str
+                    //collection_Name
+                    collection
+                    //,"short_url"
+                    ,field_Name//:str
                 )//;
-                .then(() => {
+                /**/
+                .then((/*col*/) => {
                     // indexes(callback){Promise}
                     // Retrieve all the indexes on the collection.
                     collection
@@ -419,16 +484,50 @@ var test_5 = function(description){
                           console.log("collection.indexes:%j", indexes);
                           // Let's close the db
                           // something pending & prevent from properly close(ing) db
-                          collection.s.db.close();
+                          if (collection.s.db) {
+                            console.log("closing collection.s.db");
+                            collection.s.db.close();
+                          }
                           // TypeError: Cannot read property 'close' of undefined
-                          //db.close();
+                          if (db) {
+                            console.log("closing db");
+                            db.close();
+                          }
                         }
                       ).catch((err) => {console.log("collection.indexes.then err:", err.stack);}
                     );
                   }
                 )
+                /**/
               }
             )
+            //.then(Promise.resolve())
+            /*
+            // ReferenceError: collection is not defined
+            .then((col) => {
+                // Retrieve all the indexes on the collection.
+                collection
+                  // TypeError: Cannot read property 'indexes' of undefined
+                  .indexes()
+                  .then((indexes) => {
+                      console.log("collection.indexes:%j", indexes);
+                      // Let's close the db
+                      // something pending & prevent from properly close(ing) db
+                      if (collection.s.db) {
+                        console.log("closing collection.s.db");
+                        collection.s.db.close();
+                      }
+                      // TypeError: Cannot read property 'close' of undefined
+                      if (db) {
+                        console.log("closing db");
+                        db.close();
+                      }
+                    }
+                  ).catch((err) => {console.log("collection.indexes.then err:", err.stack);}
+                );
+              }
+            )
+            */
             /*
             .then((collection) => {
               add_Docs(
@@ -444,16 +543,18 @@ var test_5 = function(description){
               //console.log("create_Unique_Index.then err:", err.stack);
               console.log("collection_Promise.then err:", err.stack);
             }
+          ///)
           );
         }
       ).catch((err) => {console.log("clear.then err:", err.stack);}
+    //)
     );
 
 
     //return results;
   };
 }("test 5: must drop collection, then create unique index in the new collection");
-//(mongoLab_URI, "tests", docs_Case_1, null, MongoClient);
+//(mongoLab_URI, "tests", docs_Case_1, "short_url", MongoClient);
 
 var test_6 = function(description){
   "use strict";

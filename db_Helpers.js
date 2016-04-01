@@ -203,32 +203,57 @@ function create_Unique_Index(
   //  mongoLab_URI,//:str
   //  collection_Name ? collection_Name : 'tests'//:str
   //);
-  if (collection) {
-    return Promise.resolve(
-      //clear.then err: ReferenceError: collection is not defined
-      // Create an index on the a field
-      collection
-        // TypeError: collection.createIndex is not a function
-        .createIndex(
-          {field_Name:1}
-          , {unique:true, background:true, w:1}
-        )
-        .then((indexName) => {
-            console.log("indexName:", indexName, "for", field_Name, "field created");
+  if (
+    collection && field_Name
+    && typeof(field_Name) == 'string' && field_Name.length > 0
+  ) {
+    console.log("creating index for", field_Name, "field");
+    var db = collection.s.db;
+    var field_Spec = {};
+    field_Spec[field_Name] = 1;
 
-            return collection;// ? for further .then() ?
-          }
-        ).catch((err) => {
-            console.log("connection err:", err.code);
-            if (collection.s.db) {
-              //db.close();
+    return Promise
+      .resolve(
+        //clear.then err: ReferenceError: collection is not defined
+        // Create an index on the a field
+        collection
+          // TypeError: collection.createIndex is not a function
+          .createIndex(
+            field_Spec
+            //{field_Name: 1}// <- obj literal failed, `field_Name` was not substituted by its value
+            //"{" + field_Name + ": 1}"//: str <- wrong syntax
+            //field_Name//: str
+            , {"unique": true, "background": true, "w": 1}
+          )
+          .then((indexName) => {
+              console.log("indexName:", indexName, "for", field_Name, "field created");
+              if (
+                db
+                //collection.s.db
+              ) {
+                //console.log("closing db");
+                //db.close();
+              }
+
+              return collection;// ? for further .then() ?
+              //return indexName;
             }
-            return console.log(err.stack);
-          }
-      )
+          ).catch((err) => {
+              console.log("connection err:", err.code);
+              console.log(err.stack)
+              if (
+                db
+                //collection.s.db
+              ) {
+                //console.log("closing db");
+                //db.close();
+              }
+              return err;
+            }
+        )
     );
   } else {
-    console.log("collection undefined ?:", collection);
+    console.log("collection or field_Name undefined ?:", collection, field_Name);
   }
 };
 
@@ -289,6 +314,80 @@ function add_Docs(
           }
       )
   );
+};
+
+// helper
+function bulk_Docs_Insert(
+  MongoClient//: MongoClient obj <- explicit
+  ,mongoLab_URI//: str
+  ,collection_Name//: str
+  //,collection//: obj [collection]
+  ,documents//:list of obj
+)/* => Promise(result) */{
+  "use strict";
+
+  collection_Name = collection_Name ? collection_Name : 'tests';
+  if (
+    MongoClient && mongoLab_URI && collection_Name && documents
+    //(MongoClient instanceof MongoClient)
+    && typeof(mongoLab_URI) == 'string' && mongoLab_URI.length > 0
+    && Array.isArray(documents) // || ([] instanceof Array)
+    && documents.length > 0
+  ) {
+    var connection = MongoClient.connect(mongoLab_URI);//, function(err, db) {
+
+    // Promise <pending> -> thanble <- no by able close db eventually
+    return Promise.resolve(
+      connection
+        .then((db) => {
+          // the new Collection instance if not in strict mode
+          var collection = db.collection(collection_Name);
+
+          return Promise.resolve(
+            collection
+              // bulkWrite(operations, options, callback) => {Promise}
+              // ordered	boolean	true
+              // bulk_results.nInserted
+              // bulk_results.insertedCount
+              .bulkWrite(
+                documents
+                ,{ ordered: false }
+                //,{ ordered: true }
+                //,{forceServerObjectId: true}
+              )//, function(err, r) {
+              .then((result) => {
+                    console.log("added:", result.insertedCount, "documents to ", collection_Name);
+                    // Let's close the db
+                    console.log("closing db");
+                    db.close();
+                    //return db ? db : result;
+                  }
+              ).catch((err) => {
+                  console.log("bulkWrite.then() err:", err.code);
+                  console.log(err.stack)
+                  if (db) {
+                    console.log("db defined:");
+                    console.log("closing db");
+                    db.close();
+                    //return db;
+                  } else {
+                    console.log("db undefined:");
+                    //return err;
+                  }
+                }
+            )
+          );
+        }
+      ).catch((err) => {
+          console.log("connection.then() err:", err.code);
+          console.log(err.stack);
+          //return err;
+        }
+      )
+    );
+  } else {
+    console.log("some mandatory parameters are undefined or have the wrong type");
+  }
 };
 
 // helper
@@ -364,4 +463,5 @@ exports.clear_Links = clear_Links;
 exports.get_Collection = get_Collection;
 exports.create_Unique_Index = create_Unique_Index;
 exports.add_Docs = add_Docs;
+exports.bulk_Docs_Insert = bulk_Docs_Insert;
 exports.make_Unique_Link = generate_Unique_Short_Link;
