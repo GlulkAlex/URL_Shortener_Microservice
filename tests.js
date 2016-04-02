@@ -712,6 +712,20 @@ var test_9 = function(description){
 
             //readable
             //response.resume();
+            // `explicitly` convert to `Strings`
+            // rather than standard `Buffer` `objects`
+            response.setEncoding('utf8');
+            response
+              .once(
+                'data',
+                (data) => {
+                  // row data Buffer
+                  console.log("data:", data);
+                }
+            );
+            //response.end([data][, encoding][, callback])
+            //response.body ? console.log("data:", data) : console.log("response.body:", response.body);
+            //console.log("response.body:", response.body);
 
             assert(contentType == expected_Result);
             assert.equal(contentType, expected_Result);
@@ -725,14 +739,15 @@ var test_9 = function(description){
       )
     );
   };
-}("test 9: must receive html as response from remote server")
+}("test 9: must receive correct / expected 'content-type' from response to remote server")
 // res.type('.html');              // => 'text/html'
 // res.type('html');               // => 'text/html'
 // res.get('Content-Type'); => "text/plain"
 //("https://api-url-shortener-microservice.herokuapp.com/", "text/html")
 // res.type('json');               // => 'application/json'
 // res.type('application/json');   // => 'application/json'
-("https://api-url-shortener-microservice.herokuapp.com/lInK", "application/json")
+//("https://api-url-shortener-microservice.herokuapp.com/lInK", "application/json")
+("https://api-url-shortener-microservice.herokuapp.com/new/http://expressjs.com/en/4x/api.html#res.type", "application/json")
 ;
 /*** tests end ***/
 
