@@ -660,6 +660,45 @@ var test_8 = function(description){
 }("test 8: must return collection object from DB, when no db passed");
 //(db_Helpers.get_Collection(mongoLab_URI, "tests"));
 //("tests", mongoLab_URI);
+
+var test_9 = function(description){
+  "use strict";
+  // curred
+  return function(
+    url//:str
+    ,expected_Result//:list of bool
+  )/* => list of bool */ {
+    "use strict";
+    console.log(description);
+
+    var hosts_Length = hosts.length;
+    var host_Index = 0;
+    var host;
+    var results = [];
+    var result;
+
+    //for (host_Index in hosts) {
+    //  host = hosts[host_Index];
+    hosts.forEach((host) => {
+        //validate_Host_Name
+        result = host_Name_Validator.is_Host_Name_Valid(host);
+        results.push(result);
+        console.log("is ", host,"a valid host name:", result);
+      }
+    );
+
+    //assert.equal({a: {b: 1}}, {a: {b: 1}});
+    //AssertionError: [ true, true, true, true, true, true, true ] == [ true, true, true, true, true, true, true ]
+    //actual_Results = results
+    assert.deepEqual(results, expected_Results);
+
+    return results;
+  };
+}("test 9: must receive html as response from remote server")
+// res.type('.html');              // => 'text/html'
+// res.type('html');               // => 'text/html'
+//("https://api-url-shortener-microservice.herokuapp.com/", expected_Results)
+;
 /*** tests end ***/
 
 //***#####################################################################***//

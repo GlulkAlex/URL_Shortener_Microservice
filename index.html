@@ -1,0 +1,104 @@
+<html>
+  <head>
+    <title>URL Shortener Microservice</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <style>
+      body {
+      background-color: lightblue;
+      }
+      h1 {
+      text-decoration: underline;
+      }
+      h3 {
+      border-left-style: solid;
+      border-left-color: green;
+      border-left-width: thick;
+      }
+      p {
+      color: green;
+      text-align: center;
+      }
+      li p {
+      color: blue;
+      text-align: left;
+      }
+      code {
+      color: Chocolate;
+      background-color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>API Basejump: URL Shortener Microservice</h1>
+    <section>
+      <h3>Objective:</h3>
+      <p>Build a full stack JavaScript app
+        <br>
+      that is functionally similar to this:
+        <br>
+      <a href="https://shurli.herokuapp.com">reference case</a> and
+        <br>
+      deploy it to Heroku.</p>
+      <h3>User story:</h3>
+      <ul>
+        <li>
+          <p>user can
+            <br>
+          pass a <var>URL</var> as a parameter and than
+            <br>
+          receive a shortened <var>URL</var> in the <code>JSON</code> response.
+          </p>
+        </li>
+        <li>
+          <p>If user pass an invalid <strong>URL</strong>
+            <br>
+          that doesn\'t follow the valid <mark><code>http://www.example.com</code></mark> format,
+            <br>
+          the <strong>JSON</strong> response will contain
+            <br>
+          an <i>error</i> instead.</p>
+        </li>
+        <li>
+          <p>When user visit that shortened URL,
+            <br>
+          that will redirect she to the original link</p>
+        </li>
+      </ul>
+    </section>
+    <section>
+      <h3>Example usage (live demo):</h3>
+      <ul>
+        <li>
+          <a
+            href="https://api-url-shortener-microservice.herokuapp.com/new/https://github.com/GlulkAlex/URL_Shortener_Microservice">
+          https://api-url-shortener-microservice.herokuapp.com/new/&lt;valid URL&gt;</a>
+        </li>
+        <li>
+          <a
+            href="https://api-url-shortener-microservice.herokuapp.com/new/htps://github./GlulkAlex/URL_Shortener_Microservice?allow=true">
+          https://api-url-shortener-microservice.herokuapp.com/new/&lt;<b>invalid</b> URL&gt;?allow=true
+          </a>
+        </li>
+        <li>
+          <a href="https://api-url-shortener-microservice.herokuapp.com/cnn">
+          https://api-url-shortener-microservice.herokuapp.com/&lt;<i>short</i> URL&gt;</a>
+        </li>
+      </ul>
+      <h3>Example output:</h3>
+      <ul>
+        <li>
+          <!--pre-->
+            <code>
+            <!--samp-->
+              {
+                "original_url": "http://freecodecamp.com/news",
+                "short_url": "https://api-url-shortener-microservice.herokuapp.com/QqZ"
+              }
+            <!--/samp-->
+            </code>
+          <!--/pre-->
+        </li>
+      </ul>
+    </section>
+  </body>
+</html>

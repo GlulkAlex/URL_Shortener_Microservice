@@ -4,8 +4,30 @@
 .env
 MONGO_URI=mongodb://localhost:27017/clementinejs
 */
+/*** config ***/
+//const
+var env = () => {
+  try {
+    //env =
+    return require('./.env.json');
+  } catch(err) {
+    console.warn("config file missing, so as actual connection info too");
+
+    //env =
+    return {
+      "TEST_MONGODB": {
+        "value": false
+      }
+      ,"DEBUG_MODE": {
+        "value": false
+      }
+    };
+  }
+}();
+
 const is_Debug_Mode = (
   process.env.IS_DEBUG ||
+  env.DEBUG_MODE.value ||
   process.argv[2]
   //true
   //false
@@ -49,15 +71,13 @@ const mongoLab_URI = (
   process.argv[3] || 
   "mongodb://localhost:27017/data_uri"
 );
-if (is_Debug_Mode){
-  console.log('process.env: %j', process.env);
-}
-// for correct connection using .env 
+// inline condition
+// !(true) || console.log('log'); => log
+!(is_Debug_Mode) || console.log('process.env: %j', process.env);
+// for correct connection using .env
 // use `heroku local` or `heroku open [<url.path>]`
 const mongo = require('mongodb').MongoClient;
-if (is_Debug_Mode){
-  console.log('mongo: %j', mongo);
-}
+!(is_Debug_Mode) || console.log('mongo: %j', mongo);
 const assert = require('assert');
 const collection_Name = (
   //"docs" // <- for tests only
@@ -70,11 +90,11 @@ const host_Name_Validator = require('./host_Name_Validator.js');
 
 // redundant here, has no practical use
 const end_Points_List = [
-  "/",
-  "/new"//, // special entry point
-  //"/home",
-  //"/help",
-  //"/info"
+  "/"
+  ,"/new" // special entry point
+  //,"/home",
+  //,"/help",
+  //,"/info"
 ];
 
 var input_args_list = process.argv;
