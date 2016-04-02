@@ -729,7 +729,10 @@ var test_9 = function(description){
 // res.type('.html');              // => 'text/html'
 // res.type('html');               // => 'text/html'
 // res.get('Content-Type'); => "text/plain"
-("https://api-url-shortener-microservice.herokuapp.com/", "text/html")
+//("https://api-url-shortener-microservice.herokuapp.com/", "text/html")
+// res.type('json');               // => 'application/json'
+// res.type('application/json');   // => 'application/json'
+("https://api-url-shortener-microservice.herokuapp.com/lInK", "application/json")
 ;
 /*** tests end ***/
 
