@@ -289,9 +289,10 @@ var test_2_1 = function(description){
 
     //return results;
   };
-}("test 2.1: must insert list of documents to collection in DB using bulkWrite()")//;
+}("test 2.1: must insert list of documents to collection in DB using bulkWrite()")
 //(MongoClient, mongoLab_URI, "tests", bulk_Docs_List);
-(MongoClient, mongoLab_URI, "tests", bulk_Docs_List_2);
+//(MongoClient, mongoLab_URI, "tests", bulk_Docs_List_2)
+;
 
 var test_3 = function(
   description//:str
@@ -671,33 +672,64 @@ var test_9 = function(description){
     "use strict";
     console.log(description);
 
-    var hosts_Length = hosts.length;
-    var host_Index = 0;
-    var host;
     var results = [];
     var result;
+    var getter = require('https');
+    //var express = require('express');
+    //var app = express();
 
-    //for (host_Index in hosts) {
-    //  host = hosts[host_Index];
-    hosts.forEach((host) => {
-        //validate_Host_Name
-        result = host_Name_Validator.is_Host_Name_Valid(host);
-        results.push(result);
-        console.log("is ", host,"a valid host name:", result);
-      }
+    //app.on('mount', callback(parent))
+    //app.on('error', (err) => {console.log("express error:", err.stack);});
+
+    return Promise.resolve(
+    /*
+    app
+      // Routes HTTP GET requests (to the running app.listen(port, [hostname], [backlog], [callback]))
+      // to the specified path
+      // with the specified callback functions.
+      .get(
+        url,
+        function (err, req, res, next) {
+          !(err) || console.log("express error:", err.stack);
+          result = res.get('Content-Type');
+          console.log("res.get('Content-Type'):", result);
+          //res.send('GET request to homepage');
+          assert(result == expected_Result);
+          assert.equal(result, expected_Result);
+          //assert.deepEqual(results, expected_Results);
+          next();
+
+          return result;
+        }
+      */
+      getter
+        .get(
+          url,
+          (response) => {
+            console.log(`Got response: ${response.statusCode}`);
+            console.log('headers: ', response.headers);
+            var contentType = response.getHeader ? response.getHeader('content-type') : response.headers['content-type'];
+
+            //readable
+            //response.resume();
+
+            assert(contentType == expected_Result);
+            assert.equal(contentType, expected_Result);
+            //assert.deepEqual(results, expected_Results);
+            //next();
+
+            return contentType;
+          }
+        )
+        .on('error', (err) => {console.log("url getter error:", err.stack);}
+      )
     );
-
-    //assert.equal({a: {b: 1}}, {a: {b: 1}});
-    //AssertionError: [ true, true, true, true, true, true, true ] == [ true, true, true, true, true, true, true ]
-    //actual_Results = results
-    assert.deepEqual(results, expected_Results);
-
-    return results;
   };
 }("test 9: must receive html as response from remote server")
 // res.type('.html');              // => 'text/html'
 // res.type('html');               // => 'text/html'
-//("https://api-url-shortener-microservice.herokuapp.com/", expected_Results)
+// res.get('Content-Type'); => "text/plain"
+("https://api-url-shortener-microservice.herokuapp.com/", "text/html")
 ;
 /*** tests end ***/
 
