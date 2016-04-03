@@ -11,16 +11,22 @@ const MongoClient = require('mongodb').MongoClient;
 // If X.json is a file, parse X.json to a JavaScript Object.
 //try {pak = require('package.json');}catch(err){pak = null;} ? pak : "fail";
 //const
-var env;// = require('./.env.json');
-try {env = require('./.env.json');
-}catch(err){
-  console.warn("config file missing, so as actual connection info too");
-  env = {
-    "TEST_MONGODB": {
-      "value": false
-    }
-  };
-}
+var env = () => {
+  try {
+    return require('./.env.json');
+  } catch(err) {
+    console.warn("config file missing, so as actual connection info too");
+
+    return {
+      "TEST_MONGODB": {
+        "value": false
+      }
+      ,"DEBUG_MODE": {
+        "value": false
+      }
+    };
+  }
+}();
 const mongoLab_URI = (
   // must be on `.env` file or
   // in heroku config
@@ -223,14 +229,14 @@ var test_2 = function(description){
       //  .then((db) => {
       collection_Promise
         .then((collection) => {
-            console.log("collection: %j", collection);
+            !(env.DEBUG_MODE.value) || console.log("collection: %j", collection);
             db_Helpers.add_Docs(
               documents,//:list of obj
               collection
             );
           }
         ).catch((err) => {
-          console.log("collection_Promise.then err:", err.code);
+          !(env.DEBUG_MODE.value) || console.log("collection_Promise.then err:", err.code);
           console.log(err.stack);
         }
       );
@@ -260,7 +266,7 @@ var test_2_1 = function(description){
     var results = [];
 
     //console.log("mongoLab_URI is:", mongoLab_URI);
-    console.log("documents: %j", documents);
+    !(env.DEBUG_MODE.value) || console.log("documents: %j", documents);
     var db_Promise = //Promise
       //.resolve(
         db_Helpers
@@ -271,7 +277,8 @@ var test_2_1 = function(description){
             ,documents//:list of obj
         //)
     );
-    console.log("db_Promise instanceof Promise:", (db_Promise instanceof Promise));
+    !(env.DEBUG_MODE.value) || console.log(
+      "db_Promise instanceof Promise:", (db_Promise instanceof Promise));
 
     return db_Promise;
       /*.then((db) => {
@@ -747,8 +754,71 @@ var test_9 = function(description){
 // res.type('json');               // => 'application/json'
 // res.type('application/json');   // => 'application/json'
 //("https://api-url-shortener-microservice.herokuapp.com/lInK", "application/json")
-("https://api-url-shortener-microservice.herokuapp.com/new/http://expressjs.com/en/4x/api.html#res.type", "application/json")
+//("https://api-url-shortener-microservice.herokuapp.com/new/http://expressjs.com/en/4x/api.html#res.type", "application/json")
 ;
+
+/* jshint esversion: 6, laxcomma: true */
+/**/
+var test_10 = function(description){
+  "use strict";
+  // curred
+  return function(
+    MongoClient//: MongoClient obj <- explicit
+    ,mongoLab_URI//:str
+    ,collection_Name//:str
+    ,documents//:list of obj
+  ) {//: => Promise | thenable ((dict | obj) | undefined | error)
+    "use strict";
+    console.log(description);
+
+    var result;
+    var results = [];
+
+    //console.log("mongoLab_URI is:", mongoLab_URI);
+    !(env.DEBUG_MODE.value) || console.log("documents: %j", documents);
+    var connection = MongoClient.connect(mongoLab_URI);//, function(err, db) {
+
+
+    //return //Promise.resolve(
+      connection
+        .then((db) => {
+            // the new Collection instance if not in strict mode
+            var collection = db.collection(collection_Name);
+            var cursor = collection
+              .find(
+                {
+                  "short_url": documents[3].short_url
+                  //docs_Case_3[3].short_url
+                  //"original_url": source_Link
+                }
+              )
+              .project({"_id": false, "original_url": true, "short_url": 1})
+              .toArray()
+              .then((docs) => {
+                  !(env.DEBUG_MODE.value) || console.log("documents found:", docs.length);
+                  !(env.DEBUG_MODE.value) || console.log("%j", docs);
+                  db.close();
+
+                  return Promise.resolve(docs);
+                }
+              )
+              .catch((err) => {
+                console.log("cursor.then():", err.stack);
+                return Promise.reject(err);
+              }
+            );
+          }
+      )
+      .catch((err) => {
+        console.log("connection.then():", err.stack);
+        return Promise.reject(err);
+      }
+    );
+  }
+}("test 10: must find matched documents in collection if any & return 1st non-matched document")
+(MongoClient, mongoLab_URI, "tests", docs_Case_3)
+;
+/**/
 /*** tests end ***/
 
 //***#####################################################################***//
@@ -924,4 +994,3 @@ if (
       */
   ///);
 }
-

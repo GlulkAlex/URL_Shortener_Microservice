@@ -461,17 +461,17 @@ function generate_Unique_Short_Link(
 
 // helper
 function insert_Link_To_DB(
-  db,//: mongoDB obj
-  collection,//: mongoDB obj
-  document_Obj,//: dict
+  db//: mongoDB obj
+  ,collection//: mongoDB obj
+  ,document_Obj//: dict
   //request,// HTTP(S) obj <- ? optional ?
-  response,//: HTTP(S) obj
-  json_Response_Obj,//: dict
+  ,response//: HTTP(S) obj
+  ,json_Response_Obj//: dict
   //host, //protocol + // + host_name
   //source_Link,// str <- optional
-  context_Message//: str <- optional
+  ,context_Message//: str <- optional
   ,is_Debug_Mode//: bool <- optional
-)/* => thenable Promise => ((null | void | Unit) | error)*/{
+){//: => thenable Promise => ((null | void | Unit) | error)
   "use strict";
   //const
   var response_Helpers = require('./response_Helpers.js');
@@ -481,15 +481,15 @@ function insert_Link_To_DB(
   //var json_Response_Obj = {};
   //var
 
-  /*** positional arguments ***/
-  /*** defaults ***/
+  //*** positional arguments ***//
+  //*** defaults ***//
   //document_Obj = document_Obj ? document_Obj : {};
   //json_Response_Obj = json_Response_Obj ? json_Response_Obj : {};
   if (context_Message) {
   } else {
     context_Message = "request.on 'end' query.allow insertOne";
   }
-  /*** defaults end ***/
+  //*** defaults end ***//
 
   /*
   short_Link = get_Unique_Short_Link(
@@ -516,7 +516,7 @@ function insert_Link_To_DB(
   };
   */
   return Promise
-    .resolve(
+    .resolve(() => {
   // guard
   // currently fires before link was generated
   if (document_Obj.short_url) {
@@ -575,7 +575,7 @@ function insert_Link_To_DB(
     //new Error(message)
 
   }
-  );
+  });
 
   //return //null;//side effect //void //Unit
 }

@@ -622,6 +622,17 @@ var http_Server = http.createServer(
 
                             // -> just bulk_Insert (3 + 1) new links
                             // with high probability one of them will be unique
+                            // .then() -> problem is which one ?
+
+                            // in that case -> maybe check / find (3 + 1) new links
+                            // in collection first
+                            // .then() -> .insertOne() one / first of them that does not found ?
+
+                            if (db && typeof(db) == "object") {
+                              if (db.hasOwnProperty('close')) {
+                                db.close();
+                              }
+                            }
 
                             db_Helpers
                               .bulk_Docs_Insert(
