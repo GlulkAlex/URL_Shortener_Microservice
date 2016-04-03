@@ -55,7 +55,8 @@ const port_Number = (
 );
 const mongo_URI = (
   process.env.MONGO_URI || 
-  process.argv[3] || 
+  //env.TEST_MONGODB.value ||
+  process.argv[3] ||
   "mongodb://localhost:27017/data"
 );
 //TEST_MONGODB
@@ -68,7 +69,8 @@ const mongoLab_URI = (
   // in both local and Heroku environments  
   process.env.MONGOLAB_URI || 
   process.env.TEST_MONGODB ||   
-  process.argv[3] || 
+  env.TEST_MONGODB.value ||
+  process.argv[3] ||
   "mongodb://localhost:27017/data_uri"
 );
 // inline condition
@@ -83,10 +85,12 @@ const collection_Name = (
   //"docs" // <- for tests only
   "links"  
 );
+
 /*** application modules ***/
 // exports.get_Short_Link = short_Link_Generator;
 const short_Link_Gen = require('./short_link_generator.js');//.short_Link_Generator;
 const host_Name_Validator = require('./host_Name_Validator.js');
+const db_Helpers = require('./db_Helpers.js');
 
 // redundant here, has no practical use
 const end_Points_List = [
@@ -201,50 +205,6 @@ var response_Body;
 var source_Link = "";
 var links_Count = 0;
 
-// helper
-function send_JSON_Response(
-  // obj -> writable stream
-  response,
-  json_Response_Obj,
-  // context 
-  message  
-) {
-  message = message ? message : 'res.on "end"'; 
-  console.log(`from send_JSON_Response, is response.headersSent: ${response.headersSent}`);
-  /*
-  response.finished
-  Boolean value that indicates 
-  whether the response has completed. 
-  Starts as 'false'. 
-  After 'response.end()' executes, 
-  the value will be true.
-  */
-  console.log(`from send_JSON_Response, is response.finished: ${response.finished}`);
-  if (response.finished) {
-    console.log('response.end() occur already. Nothing will be written as / to response.');
-  } else {
-    console.log(message, 'json_Response_Obj: %j', json_Response_Obj);
-    response
-      .writeHead(
-      200, 
-      { 'Content-Type': 'application/json' }
-    ); 
-    //* close `writable` `stream` *
-    response
-      //.write(
-      .end(
-        //TypeError: Converting circular structure to JSON
-        JSON
-        .stringify(                
-          json_Response_Obj  
-        )
-    );
-    //response.end();
-    console.log(message, 'response.end()'); 
-  }
-    
-  //return ;//null; //void //Unit
-}
 /*
 // to find string of specific length
 // without dedicated 'length' field
@@ -258,201 +218,6 @@ function send_JSON_Response(
 }
 */
 
-// helper
-function get_Unique_Short_Link(
-  db,// mongoDB obj
-  collection, // mongoDB obj
-  callback// if not return Promise
-  //source_Link// str <- optional
-)/* => str ? must be promise */{
-  // new Promise((resolve, reject) => {resolve(thisPromiseSuccessReturnValue);});
-  "use strict";
-  /*
-  1. Get `cursor` of all `documents` in `collection` => collection_Size
-    (may be it is "lazy" until iterated & not consumes resources)
-  2. short_Link_Size = short_Link_Gen.get_Short_Link_Length(collection_Size)
-  // $filter (aggregation)
-  // filter(filter) => {Cursor}
-  // Set the `cursor` `query`
-  *3. filter `cursor` by 'short_Link_Size' <- optional
-  4. filter `cursor` by 'short_Link' =>
-    if found any get_Short_Link() & repeat 4.
-    else => Done.
-  */
-  // must be determined at least once per request
-  //var collection_Size = 0;
-  //var all_Docs_Cursor = collection
-  //  .find();
-  var all_Docs_Cursor_List = collection
-    //all_Docs_Cursor
-    .find()
-    .toArray();
-  var cursor_Docs_Count = collection
-    //all_Docs_Cursor
-    .find()
-    .count();
-  //var short_Link = "";
-  //var attempts_Counter = 0;
-  //var is_Unique = false;
-  //var same_Link_Size_Docs_Cursor;
-  var same_Link_Size_Docs = [];
-  //var item_Index;
-  //var doc_Index;
-  //var doc;
-
-  return Promise
-    .resolve(
-  cursor_Docs_Count
-    //.count()
-    .then((count) => {
-        console.log('(collection / cursor).count:', count);
-        //collection_Size = count;
-
-        //if (collection_Size > 0) {}
-        //all_Docs_Cursor.rewind();
-        //all_Docs_Cursor
-          //.toArray()
-        all_Docs_Cursor_List
-          .then((docs) => {
-              generate_Unique_Short_Link(
-                //collection_Size, //int
-                count,
-                docs//list of obj
-              );
-            }
-        )
-        .catch((err) => {
-            // (collection / cursor).toArray error: ReferenceError: doc_Index is not defined
-            console.log('(collection / cursor).toArray error:', err.stack);
-            //return short_Link;
-          }
-        );
-      }
-    )
-    .catch((err) => {
-        console.log('(collection / cursor).count error:', err.stack);
-        //return short_Link;
-      }
-  )//;
-  );
-  // when this happened ?
-  //return short_Link;// str
-}
-// helper
-function insert_Link_To_DB(
-  db,// mongoDB obj
-  collection,// mongoDB obj
-  document_Obj,// dict
-  //request,// HTTP(S) obj <- ? optional ?
-  response,// HTTP(S) obj
-  json_Response_Obj,// dict
-  //host, //protocol + // + host_name
-  //source_Link,// str <- optional
-  context_Message// str <- optional
-  //is_Debug_Mode// bool <- optional
-)/* => null | void | Unit */{
-  "use strict";
-
-  var collection_Size = 0;
-  //var short_Link; // = "";// = document_Obj.short_Link
-  //var source_Link;
-  //var json_Response_Obj = {};
-  //var
-  /*** positional arguments ***/
-  /*** defaults ***/
-  //document_Obj = document_Obj ? document_Obj : {};
-  //json_Response_Obj = json_Response_Obj ? json_Response_Obj : {};
-  if (context_Message) {
-  } else {
-    context_Message = "request.on 'end' query.allow insertOne";
-  }
-  /*** defaults end ***/
-  /*
-  short_Link = get_Unique_Short_Link(
-    db,// mongoDB obj
-    collection, // mongoDB obj
-    source_Link// str
-  );
-
-  json_Response_Obj = {
-    "original_url": (
-      source_Link
-    ),
-    "short_url": (request.socket.encrypted ? 'https://' : 'http://') +
-    request.headers.host + "/" +
-    // may create duplicates
-    // additional check needed
-    short_Link,
-    "message": "new link stored"
-  }
-
-  document_Obj = {
-    "original_url": json_Response_Obj.original_url,
-    "short_url": short_Link
-  };
-  */
-  // guard
-  // currently fires before link was generated
-  if (document_Obj.short_url) {
-    console.log('short_url:', short_url, "provided");
-    collection
-      // insertOne(doc, options, callback) => {Promise}
-      .insertOne(
-        document_Obj
-        //JSON.stringify(document_Obj)
-      )
-      .then(
-        (result) => {//.result.n
-          //console.log(JSON.stringify(document_Obj));
-          console.log('inserted document_Obj: %j', document_Obj);
-          if (
-            true
-            //is_Debug
-          ) {
-            console.log(`result.result.n: ${result.result.n}`);
-            //console.log('result.result: %j', result.result);
-          }
-          send_JSON_Response(
-            // obj -> writable stream
-            response,
-            json_Response_Obj,
-            // context
-            context_Message
-          );
-
-          /* finaly */
-          db.close();
-          console.log(`Close db after link search & insert `);
-        }
-      )
-      .catch(
-        (err) => {
-          // "E11000 duplicate key error index:
-          // links.$original_url_text_short_url_text dup key: { : \"com\", : 0.625 }
-          console.log('(collection / cursor).insertOne error:', err.stack);
-          json_Response_Obj = {
-            "error": err.message,
-            "message": "on links.insertOne{'short_url':" + document_Obj.short_url + //short_Link +
-            "'original_url':" + document_Obj.original_url +
-            " catch error when query.allow"
-          };
-          send_JSON_Response(
-            // obj -> writable stream
-            response,
-            json_Response_Obj,
-            // context
-            'request.on "end" query.allow .insertOne catch error'
-          );
-        }
-    );
-  } else {
-    console.log('undefined / empty document_Obj.short_url');
-  }
-
-
-  return //null;//side effect //void //Unit
-}
-
 if (input_args_list.length >= 3) {
   //first_Name = input_args_list[2].trim();
 }
@@ -461,114 +226,9 @@ if (input_args_list.length >= 3) {
 //console.log(`server listen on ${address}`);
 // %j work as JSON.stringify -> flatten object
 //server listen on {"address":"127.0.0.1","family":"IPv4","port":8080}
-console.log('process.env.MONGO_URI: %j', mongo_URI);
-console.log('process.env.MONGOLAB_URI: %j', mongoLab_URI);
+!(is_Debug_Mode) || console.log('process.env.MONGO_URI: %j', mongo_URI);
+!(is_Debug_Mode) || console.log('process.env.MONGOLAB_URI: %j', mongoLab_URI);
 
-if (false) {
-mongo
-.connect(
-  //url, 
-  mongoLab_URI,  
-  function(
-      err, 
-      db
-  ) {
-    // db gives access to the database
-    if (err) {
-      console.log('mongo.connect error:', err);
-      //throw err;
-    } else {
-      const collection = db.collection(collection_Name);
-        
-      /* 
-      WriteResult({ "nInserted" : 1 })
-      If the `insert` operation is successful, 
-      verify the insertion by 
-      querying the collection.
-      */
-      if (false) {  
-        //var write_Result = 
-        collection
-          .insert(
-          document_Obj,
-          //JSON.stringify(document_Obj),
-          function(
-          err, 
-           //data
-           result//.result.n 
-          ) {
-            if (err) {
-              console.log('(collection / cursor).insert error:', err);
-              //throw err;
-            } else {
-              //console.log(data);
-              //console.log(JSON.stringify(document_Obj));
-              console.log('document_Obj: %j', document_Obj);  
-              if (is_Debug) {
-                console.log(`result.result.n: ${result.result.n}`);
-                console.log('result.result: %j', result.result);
-              }
-              /* finaly */
-              db.close();
-              //console.log(`Close db after ${original_url} search`);
-            }
-          }
-        );
-      }
-      
-      /*
-      new Promise(executor);
-      new Promise(function(resolve, reject) { ... });
-      */
-      // count(query, options, callback) => Promise  
-      collection
-        .count({})
-        .then(
-          function(count) {
-            ////assert.equal(err, null);  
-            //assert.equal(1, count);
-            console.log(`collection_Name consist of / contains: ${count} documents`);
-              
-            //db.close();
-          }
-        )
-        .catch(function(e) {
-          console.log(e); 
-        }
-      );  
-          
-      collection
-        .find(
-          {
-            "firstName":"Alex"//,"lastName":"Gluk"
-          }
-         )
-        .project({"_id": false, "firstName": true, "lastName": 1})//"_id": false
-        .toArray()
-        .then(
-          function(docs) {
-            ////assert.equal(err, null);  
-            //assert.equal(3, docs.length);
-            //console.log(`collection_Name content: ${docs}`);
-            console.log(`collection_Name content.length: ${docs.length}`);  
-            //console.log("collection_Name content:\n%j", docs);  
-            for (var/*let*/ doc of docs) {
-              console.log(JSON.stringify(doc));
-            }  
-              
-            db.close();
-          }
-        )
-        .catch(
-          function(e) {
-            console.log(e); 
-          }
-      );  
-        
-    }
-  }
-);
-}
 
 var http_Server = http.createServer(
   function (
@@ -657,19 +317,21 @@ var http_Server = http.createServer(
         - /<short_Link> -> redirect to <original_link> | error
         - /<path>/[whatever] -> redirect to / | root
         */
-        console.log('request.on "end"');
+        !(is_Debug_Mode) || console.log('request.on "end"');
         if (
           true
           //is_Debug_Mode
         ) {
-          console.log(`request.on "end" request.url: ${request.url}`);
+          !(is_Debug_Mode) || console.log(
+            `request.on "end" request.url: ${request.url}`);
           //request.headers.referer: http://localhost:8080/new/https://devcenter.heroku.com/articles/getting-started-with-nodejs
           // all hash part #push-local-changes is lost
           // it seems like hash part is (for) client / front-end only
           /*
           so, does this really matter ?
           */
-          console.log(`request.on "end" request.headers.referer: ${request.headers.referer}`);
+          !(is_Debug_Mode) || console.log(
+            `request.on "end" request.headers.referer: ${request.headers.referer}`);
           // from http://expressjs.com/en/api.html#req
           /*
           console.log(`request.on "end" request.baseUrl: ${request.baseUrl}`);
@@ -724,8 +386,8 @@ var http_Server = http.createServer(
         } 
         console.log('request.on "end" query_List\n%j:', query_List);
         */
-        console.log('request.on "end" query_Allow_Prop:', query_Allow_Prop);
-        console.log('request.on "end" url_Obj\n%j:', url_Obj);
+        !(is_Debug_Mode) || console.log('request.on "end" query_Allow_Prop:', query_Allow_Prop);
+        !(is_Debug_Mode) || console.log('request.on "end" url_Obj\n%j:', url_Obj);
         /*
         url formal correctness check:
             Url {
@@ -787,7 +449,8 @@ var http_Server = http.createServer(
         if (false) {          
         }  
         // 'host/' & 'host' both return {path: '/', pathname: '/'} 
-        console.log(`request.on "end" url_Obj.path: ${url_Obj.path}`);  
+        !(is_Debug_Mode) || console.log(`request.on "end" url_Obj.path: ${url_Obj.path}`);
+
         /***************/
         /*** routing ***/
         /***************/
@@ -837,12 +500,14 @@ var http_Server = http.createServer(
           "href":"http://freecodecamp.com/news/?allow=true"}
           */
           source_Link = url_Obj.path.slice(5);
-          console.log('request.on "end" source_Link:', source_Link);
+          !(is_Debug_Mode) || console.log(
+            'request.on "end" source_Link:', source_Link);
           if (
             true
             //source_Link.length > 0
           ) {
-            console.log('request.on "end" something after "new/" in:', url_Obj.path);
+            !(is_Debug_Mode) || console.log(
+              'request.on "end" something after "new/" in:', url_Obj.path);
             url_Obj = url.parse(source_Link, true);
             //console.log(`url_Obj.pathname: ${url_Obj.pathname}`);
             // ? redundant ?
@@ -857,8 +522,9 @@ var http_Server = http.createServer(
               // ? replace `search` with "" ?
               // skip `search` & all after `search`
               source_Link = source_Link.slice(0, source_Link.indexOf("?"));
-              console.log(
-                `query_Allow_Prop: ${query_Allow_Prop}, so source_Link: ${source_Link} considered to be correct`);
+              !(is_Debug_Mode) || console.log(
+                `query_Allow_Prop: ${query_Allow_Prop}`,
+                `,so source_Link: ${source_Link} considered to be correct`);
               /*
               1. check MongoDB if `source_Link` exist already
                 1.1 if true -> return stored `short_Link`
@@ -887,7 +553,8 @@ var http_Server = http.createServer(
                     new Promise(function(resolve, reject) { ... });
                     */
                     // count(query, options, callback) => Promise
-                    console.log(`trying to find original_url == ${source_Link} in ${collection_Name}`);
+                    !(is_Debug_Mode) || console.log(
+                      `trying to find original_url == ${source_Link} in ${collection_Name}`);
                     var cursor = collection
                       // has content / items for search
                       /*
@@ -921,7 +588,8 @@ var http_Server = http.createServer(
                       //  (err, doc) => {
                       .then(
                         (doc) => {
-                          console.log(`query on ${collection_Name} content: ${doc}`);
+                          !(is_Debug_Mode) || console.log(
+                            `query on ${collection_Name} content: ${doc}`);
                           //console.log(`collection ${collection_Name} content.length: ${docs.length}`);
                           //console.log("collection_Name content:\n%j", docs);
 
@@ -947,31 +615,30 @@ var http_Server = http.createServer(
                             // not found => new
                             // must be unique within `link` collection
                             // otherwise generate error on insert
+
                             // so, check for duplicate first / query mogoDB ?
                             // or insert new(ly) generated link every time
                             // until success ?
-                            /*
-                            collection
-                              .find()
-                              .count()
-                              .then((count) => {
-                                  console.log('(collection / cursor).count:', count);
-                                  collection_Size = count;
-                                }
-                              )
-                              .catch((err) => {
-                                  console.log('(collection / cursor).count error:', err.stack);
-                                }
+
+                            // -> just bulk_Insert (3 + 1) new links
+                            // with high probability one of them will be unique
+
+                            db_Helpers
+                              .bulk_Docs_Insert(
+                                MongoClient//: MongoClient obj <- explicit
+                                ,mongoLab_URI//: str
+                                ,collection_Name//: str
+                                ,documents//:list of obj
                             );
-                            */
-                            //short_Link =
+
                             get_Unique_Short_Link(
                               db,// mongoDB obj
                               collection// mongoDB obj
                             )//;
                             //short_Link
                               .then((short_Link) => {
-                                console.log('then new stored short_Link for response', short_Link);
+                                !(is_Debug_Mode) || console.log(
+                                  'then new stored short_Link for response', short_Link);
                                 json_Response_Obj = {
                                   // ? mast contain query without allow ?
                                   /*

@@ -459,6 +459,234 @@ function generate_Unique_Short_Link(
   }
 }
 
+// helper
+function insert_Link_To_DB(
+  db,//: mongoDB obj
+  collection,//: mongoDB obj
+  document_Obj,//: dict
+  //request,// HTTP(S) obj <- ? optional ?
+  response,//: HTTP(S) obj
+  json_Response_Obj,//: dict
+  //host, //protocol + // + host_name
+  //source_Link,// str <- optional
+  context_Message//: str <- optional
+  ,is_Debug_Mode//: bool <- optional
+)/* => thenable Promise => ((null | void | Unit) | error)*/{
+  "use strict";
+  //const
+  var response_Helpers = require('./response_Helpers.js');
+  var collection_Size = 0;
+  //var short_Link; // = "";// = document_Obj.short_Link
+  //var source_Link;
+  //var json_Response_Obj = {};
+  //var
+
+  /*** positional arguments ***/
+  /*** defaults ***/
+  //document_Obj = document_Obj ? document_Obj : {};
+  //json_Response_Obj = json_Response_Obj ? json_Response_Obj : {};
+  if (context_Message) {
+  } else {
+    context_Message = "request.on 'end' query.allow insertOne";
+  }
+  /*** defaults end ***/
+
+  /*
+  short_Link = get_Unique_Short_Link(
+    db,// mongoDB obj
+    collection, // mongoDB obj
+    source_Link// str
+  );
+
+  json_Response_Obj = {
+    "original_url": (
+      source_Link
+    ),
+    "short_url": (request.socket.encrypted ? 'https://' : 'http://') +
+    request.headers.host + "/" +
+    // may create duplicates
+    // additional check needed
+    short_Link,
+    "message": "new link stored"
+  }
+
+  document_Obj = {
+    "original_url": json_Response_Obj.original_url,
+    "short_url": short_Link
+  };
+  */
+  return Promise
+    .resolve(
+  // guard
+  // currently fires before link was generated
+  if (document_Obj.short_url) {
+    !(is_Debug_Mode) || console.log('short_url:', short_url, "provided");
+    collection
+      // insertOne(doc, options, callback) => {Promise}
+      .insertOne(
+        document_Obj
+        //JSON.stringify(document_Obj)
+      )
+      .then(
+        (result) => {//.result.n
+          //console.log(JSON.stringify(document_Obj));
+          !(is_Debug_Mode) || console.log('inserted document_Obj: %j', document_Obj);
+          !(is_Debug_Mode) || console.log(`result.result.n: ${result.result.n}`);
+          //console.log('result.result: %j', result.result);
+
+          response_Helpers.
+          send_JSON_Response(
+            // obj -> writable stream
+            response,
+            json_Response_Obj,
+            // context
+            context_Message
+          );
+
+          /* finaly */
+          db.close();
+          !(is_Debug_Mode) || console.log(`Close db after link search & insert `);
+        }
+      )
+      .catch(
+        (err) => {
+          // "E11000 duplicate key error index:
+          // links.$original_url_text_short_url_text dup key: { : \"com\", : 0.625 }
+          !(is_Debug_Mode) || console.log('(collection / cursor).insertOne error:', err.stack);
+          json_Response_Obj = {
+            "error": err.message,
+            "message": "on links.insertOne{'short_url':" + document_Obj.short_url + //short_Link +
+            "'original_url':" + document_Obj.original_url +
+            " catch error when query.allow"
+          };
+
+          response_Helpers.
+          send_JSON_Response(
+            // obj -> writable stream
+            response,
+            json_Response_Obj,
+            // context
+            'request.on "end" query.allow .insertOne catch error'
+          );
+        }
+    );
+  } else {
+    !(is_Debug_Mode) || console.log('undefined / empty document_Obj.short_url');
+    //new Error(message)
+
+  }
+  );
+
+  //return //null;//side effect //void //Unit
+}
+
+// just working code examples
+if (false) {
+mongo
+.connect(
+  //url,
+  mongoLab_URI,
+  function(
+      err,
+      db
+  ) {
+    // db gives access to the database
+    if (err) {
+      console.log('mongo.connect error:', err);
+      //throw err;
+    } else {
+      const collection = db.collection(collection_Name);
+
+      /*
+      WriteResult({ "nInserted" : 1 })
+      If the `insert` operation is successful,
+      verify the insertion by
+      querying the collection.
+      */
+      if (false) {
+        //var write_Result =
+        collection
+          .insert(
+          document_Obj,
+          //JSON.stringify(document_Obj),
+          function(
+          err,
+           //data
+           result//.result.n
+          ) {
+            if (err) {
+              console.log('(collection / cursor).insert error:', err);
+              //throw err;
+            } else {
+              //console.log(data);
+              //console.log(JSON.stringify(document_Obj));
+              console.log('document_Obj: %j', document_Obj);
+              if (is_Debug) {
+                console.log(`result.result.n: ${result.result.n}`);
+                console.log('result.result: %j', result.result);
+              }
+              /* finaly */
+              db.close();
+              //console.log(`Close db after ${original_url} search`);
+            }
+          }
+        );
+      }
+
+      /*
+      new Promise(executor);
+      new Promise(function(resolve, reject) { ... });
+      */
+      // count(query, options, callback) => Promise
+      collection
+        .count({})
+        .then(
+          function(count) {
+            ////assert.equal(err, null);
+            //assert.equal(1, count);
+            console.log(`collection_Name consist of / contains: ${count} documents`);
+
+            //db.close();
+          }
+        )
+        .catch(function(e) {
+          console.log(e);
+        }
+      );
+
+      collection
+        .find(
+          {
+            "firstName":"Alex"//,"lastName":"Gluk"
+          }
+         )
+        .project({"_id": false, "firstName": true, "lastName": 1})//"_id": false
+        .toArray()
+        .then(
+          function(docs) {
+            ////assert.equal(err, null);
+            //assert.equal(3, docs.length);
+            //console.log(`collection_Name content: ${docs}`);
+            console.log(`collection_Name content.length: ${docs.length}`);
+            //console.log("collection_Name content:\n%j", docs);
+            for (var/*let*/ doc of docs) {
+              console.log(JSON.stringify(doc));
+            }
+
+            db.close();
+          }
+        )
+        .catch(
+          function(e) {
+            console.log(e);
+          }
+      );
+
+    }
+  }
+);
+}
+
 exports.clear_Links = clear_Links;
 exports.get_Collection = get_Collection;
 exports.create_Unique_Index = create_Unique_Index;

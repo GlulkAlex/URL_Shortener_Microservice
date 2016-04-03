@@ -135,6 +135,90 @@ function short_Link_Generator(
   return result;    
 }
 
+//*** not working functions / methods ***///
+// helper
+function get_Unique_Short_Link(
+  db,// mongoDB obj
+  collection, // mongoDB obj
+  callback// if not return Promise
+  //source_Link// str <- optional
+)/* => str ? must be promise */{
+  // new Promise((resolve, reject) => {resolve(thisPromiseSuccessReturnValue);});
+  "use strict";
+  /*
+  1. Get `cursor` of all `documents` in `collection` => collection_Size
+    (may be it is "lazy" until iterated & not consumes resources)
+  2. short_Link_Size = short_Link_Gen.get_Short_Link_Length(collection_Size)
+  // $filter (aggregation)
+  // filter(filter) => {Cursor}
+  // Set the `cursor` `query`
+  *3. filter `cursor` by 'short_Link_Size' <- optional
+  4. filter `cursor` by 'short_Link' =>
+    if found any get_Short_Link() & repeat 4.
+    else => Done.
+  */
+  // must be determined at least once per request
+  //var collection_Size = 0;
+  //var all_Docs_Cursor = collection
+  //  .find();
+  var all_Docs_Cursor_List = collection
+    //all_Docs_Cursor
+    .find()
+    .toArray();
+  var cursor_Docs_Count = collection
+    //all_Docs_Cursor
+    .find()
+    .count();
+  //var short_Link = "";
+  //var attempts_Counter = 0;
+  //var is_Unique = false;
+  //var same_Link_Size_Docs_Cursor;
+  var same_Link_Size_Docs = [];
+  //var item_Index;
+  //var doc_Index;
+  //var doc;
+
+  return Promise
+    .resolve(
+  cursor_Docs_Count
+    //.count()
+    .then((count) => {
+        console.log('(collection / cursor).count:', count);
+        //collection_Size = count;
+
+        //if (collection_Size > 0) {}
+        //all_Docs_Cursor.rewind();
+        //all_Docs_Cursor
+          //.toArray()
+        all_Docs_Cursor_List
+          .then((docs) => {
+              generate_Unique_Short_Link(
+                //collection_Size, //int
+                count,
+                docs//list of obj
+              );
+            }
+        )
+        .catch((err) => {
+            // (collection / cursor).toArray error: ReferenceError: doc_Index is not defined
+            console.log('(collection / cursor).toArray error:', err.stack);
+            //return short_Link;
+          }
+        );
+      }
+    )
+    .catch((err) => {
+        console.log('(collection / cursor).count error:', err.stack);
+        //return short_Link;
+      }
+  )//;
+  );
+  // when this happened ?
+  //return short_Link;// str
+}
+
+//*** not working functions / methods end ***///
+
 // assigning to exports will not modify module, must use module.exports
 exports.get_Short_Link = short_Link_Generator;
 exports.rand_Bool = random_Boolean;
