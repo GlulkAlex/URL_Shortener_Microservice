@@ -92,6 +92,8 @@ Restrictions on valid host names
 function validate_Host_Name(
   host_Name//:str
 )/* => bool */{
+  "use strict";
+
   var is_Valid = true;//false;
   var host_Name_Length = host_Name.length;
   // Punycode encoding

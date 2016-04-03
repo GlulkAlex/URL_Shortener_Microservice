@@ -51,6 +51,7 @@ const link_Gen = require('./short_link_generator.js');//.short_Link_Generator;
 //const db_Helpers = require('./app.js');
 //exports.make_Unique_Link
 const db_Helpers = require('./db_Helpers.js');
+const comparator = require('./comparator.js');
 /*** application modules end ***/
 
 /*** helpers ***/
@@ -786,8 +787,17 @@ var test_10 = function(description){
             var collection = db.collection(collection_Name);
             var cursor = collection
               .find(
+                //{ $or: [ { quantity: { $lt: 20 } }, { price: 10 } ] }
                 {
-                  "short_url": documents[3].short_url
+                  $or: [
+                    //{"short_url": documents[0].short_url}
+                    //,{"short_url": documents[3].short_url}
+                    documents[0]
+                    ,documents[1]
+                    ,documents[2]
+                    ,documents[3]
+                  ]
+                  //"short_url": documents[3].short_url
                   //docs_Case_3[3].short_url
                   //"original_url": source_Link
                 }
@@ -797,6 +807,7 @@ var test_10 = function(description){
               .then((docs) => {
                   !(env.DEBUG_MODE.value) || console.log("documents found:", docs.length);
                   !(env.DEBUG_MODE.value) || console.log("%j", docs);
+                  //*** find Arrays / lists difference ***///
                   db.close();
 
                   return Promise.resolve(docs);
@@ -816,9 +827,39 @@ var test_10 = function(description){
     );
   }
 }("test 10: must find matched documents in collection if any & return 1st non-matched document")
-(MongoClient, mongoLab_URI, "tests", docs_Case_3)
+//(MongoClient, mongoLab_URI, "tests", docs_Case_3)
 ;
-/**/
+var test_11 = function(description){
+  "use strict";
+  // curred
+  return function(
+    this_List//: list (of obj)
+    ,other_List//: list (of obj)
+  ) {//: => list | undefined
+    "use strict";
+    console.log(description);
+
+    var result;
+    var results = [];
+
+    !(env.DEBUG_MODE.value) || console.log(
+      "this_List: %j", this_List
+      ,"\nvs."
+      ,"that_List: %j", other_List
+    );
+    results = comparator.lists_Difference(
+      this_List//: list (of obj)
+      ,other_List//: list (of obj)
+    );
+    !(env.DEBUG_MODE.value) || console.log(
+      "lists_Difference: %j", results
+    );
+
+    return results;
+  }
+}("test 11: must return elements form this list that are not in that list")
+(docs_Case_2, docs_Case_3)
+;
 /*** tests end ***/
 
 //***#####################################################################***//
