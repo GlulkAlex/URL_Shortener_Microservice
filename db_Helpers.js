@@ -633,12 +633,20 @@ function find_Short_Link(
     ]
   };
   !(is_Debug_Mode) || console.log("query: %j", query);
-  //return Promise.resolve(
+
+  //return Promise.resolve(connection
   return connection
       .then((db) => {
           // the new Collection instance if not in strict mode
-          var collection = db.collection(collection_Name);
-          var cursor = collection
+          //var collection = db.collection(collection_Name);
+          //var cursor = collection
+
+          // non-interrupted chain of returns needed
+          // to obtain / gain Promise | thenable
+          // as return value
+          //return collection
+          return db
+            .collection(collection_Name)
             .find(
               query
             )
@@ -655,7 +663,7 @@ function find_Short_Link(
                     .forEach((val, idx, array) => {
                     //!(is_Debug_Mode) ||
                     console.log(
-                      val,'->',docs[val]);
+                      val, '->', docs[val]);
                   });
                 }
                 //*** find original_Link in docs ***//
@@ -699,6 +707,7 @@ function find_Short_Link(
       console.log("connection.then():", err.stack);
       return Promise.reject(err);
     }
+    //)
   );
 }
 

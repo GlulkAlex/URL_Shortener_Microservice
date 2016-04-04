@@ -255,7 +255,8 @@ var http_Server = http.createServer(
     var query_List = [];
     var query_Allow_Prop = false;  
     var source_Link = "";
-    var short_Link = "";  
+    var short_Link = "";
+    var short_Link_Size = 1;
     var json_Response_Obj = {}; 
     // links
     // links_Count
@@ -451,9 +452,9 @@ var http_Server = http.createServer(
         // 'host/' & 'host' both return {path: '/', pathname: '/'} 
         !(is_Debug_Mode) || console.log(`request.on "end" url_Obj.path: ${url_Obj.path}`);
 
-        /***************/
-        /*** routing ***/
-        /***************/
+        //***************//
+        //*** routing ***//
+        //***************//
         if (
           url_Obj.path == end_Points_List[0] //||
           //url_Obj.path == end_Points_List[2] ||
@@ -512,7 +513,8 @@ var http_Server = http.createServer(
             //console.log(`url_Obj.pathname: ${url_Obj.pathname}`);
             // ? redundant ?
             //query_Allow_Prop = url_Obj.query.allow;
-            console.log('request.on "end" source_Link url_Obj\n%j:', url_Obj);
+            !(is_Debug_Mode) ||console.log(
+              'request.on "end" source_Link url_Obj\n%j:', url_Obj);
             // `allow`
             if (
               //url_Obj.query.allow
@@ -553,45 +555,50 @@ var http_Server = http.createServer(
                     new Promise(function(resolve, reject) { ... });
                     */
                     // count(query, options, callback) => Promise
-                    !(is_Debug_Mode) || console.log(
-                      `trying to find original_url == ${source_Link} in ${collection_Name}`);
-                    var cursor = collection
-                      // has content / items for search
-                      /*
-                      find(query) => {Cursor}
-                        Creates a `cursor`
-                        for a `query`
-                        that can be used
-                        to iterate over `results` from MongoDB
+                    collection
+                      .count({})
+                      .then((count) => {
+                        collection_Size = count;
+                        short_Link_Size = link_Gen.get_Short_Link_Length();
+                        db.close;
 
-                      Cursor#event:readable
-                      so stream and
-                      can be piped
-                      */
-                      //find().limit(1).next(function(err, doc){})
-                      .find(
-                        {
-                          //"short_url":"Alex"
-                          // [ReferenceError: short_Link is not defined]
-                          "original_url": source_Link
-                        }
-                      )
-                      // use index
-                      //.hint('original_url')
-                      .limit(1)
-                      .project({"_id": false, "original_url": true, "short_url": 1})
-                      //.toArray()
-                      // next(callback) => {Promise}
-                      // Get the next available `document` from the `cursor`,
-                      // returns 'null' if no more `documents` are available.
-                      .next()
-                      //  (err, doc) => {
-                      .then(
-                        (doc) => {
-                          !(is_Debug_Mode) || console.log(
-                            `query on ${collection_Name} content: ${doc}`);
-                          //console.log(`collection ${collection_Name} content.length: ${docs.length}`);
-                          //console.log("collection_Name content:\n%j", docs);
+                        !(is_Debug_Mode) || console.log(
+                          //`trying to find original_url == ${source_Link} in ${collection_Name}`);
+                          "trying to find \'original_url\' ==", source_Link, "doc in/among(st)", count, collection_Name,
+                          "`s documents");
+                        var search_Result_Promise = db_Helpers.find_Short_Link(
+                          MongoClient//: MongoClient obj <- explicit
+                          ,mongoLab_URI//: str
+                          //,collection_Name//: str
+                          ,source_Link//,original_Link//: str
+                          ,short_Link_Size
+                          ,is_Debug_Mode//,env.DEBUG_MODE.value
+                        );
+                        // has content / items for search
+                        /*
+                        find(query) => {Cursor}
+                          Creates a `cursor`
+                          for a `query`
+                          that can be used
+                          to iterate over `results` from MongoDB
+
+                        Cursor#event:readable
+                        so stream and
+                        can be piped
+                        */
+                        search_Result_Promise
+                          .then(
+                            (search_Result) => {
+                              !(is_Debug_Mode) || console.log(
+                                //`query on ${collection_Name} content: ${doc}`);
+                                "search_Result on", collection_Name, "is:", search_Result);
+                              //console.log(`collection ${collection_Name} content.length: ${docs.length}`);
+                              //console.log("collection_Name content:\n%j", docs);
+
+                            // cases:
+                            // - found existed short link
+                            // - generated new short link
+                            // - undefined -> something goes wrong
 
                           if (
                             doc // doc != null

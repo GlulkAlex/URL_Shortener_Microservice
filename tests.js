@@ -161,9 +161,10 @@ var test_1 = function(description){
 
     return results;
   };
-}("test 1: must check for a valid host name");
-//(hosts_case_1, expected_Results);
-//(hosts_case_2, expected_Results_case_2);
+}("test 1: must check for a valid host name")
+//(hosts_case_1, expected_Results)
+//(hosts_case_2, expected_Results_case_2)
+;
 
 // DONE 1.drop collection
 // DONE 2.dummy data generator
@@ -247,9 +248,10 @@ var test_2 = function(description){
     //return results;
   };
 //}("test 2: must drop existing collection, create new one & insert list of documents to it in DB");
-}("test 2: must insert list of documents to collection in DB");
-//(mongoLab_URI, "tests", docs_List);
-//(mongoLab_URI, "tests", bulk_Docs_List);
+}("test 2: must insert list of documents to collection in DB")
+//(mongoLab_URI, "tests", docs_List)
+//(mongoLab_URI, "tests", bulk_Docs_List)
+;
 
 var test_2_1 = function(description){
   "use strict";
@@ -319,8 +321,9 @@ var test_3 = function(
 
 
   return result;
-};
-//}("test 3: choose_Options must be non-empty");
+}
+//("test 3: choose_Options must be non-empty")
+;
 
 var test_4 = function(
   description
@@ -777,23 +780,31 @@ var test_10 = function(description){
     "use strict";
     console.log(description);
 
-    var result = db_Helpers.find_Short_Link(
+    //var result = db_Helpers.find_Short_Link(
+    return db_Helpers.find_Short_Link(
       MongoClient//: MongoClient obj <- explicit
       ,mongoLab_URI//: str
       ,collection_Name//: str
       ,original_Link//: str
       ,short_Link_Size
       ,env.DEBUG_MODE.value
-    );
-    var results = [];
+    )//;
+    //var results = [];
 
-    return result;
+    //return result;
+    //return Promise.resolve(result
+    //return result
+        .then((f_R) => {console.log("f_R", f_R);})
+      .catch((err) => {console.log("result.then:", err.stack);}
+      //)
+    );
   }
 }("test 10: must " +
 "find matched documents in collection if any &\n" +
-"return -> new short_Link as (from) 1st non-matched document if any\n" +
+"return as Promise | thenable\n" +
+"-> new short_Link as (from) 1st non-matched document if any\n" +
 "with all (both) field values not in db.collection\n" +
-"or -> existing short_url" +
+"or -> existing short_url\n" +
 "or -> undefined")
 (MongoClient, mongoLab_URI, "tests", "o_L_0", 1)
 //(MongoClient, mongoLab_URI, "tests", "o_L_1", 1)
