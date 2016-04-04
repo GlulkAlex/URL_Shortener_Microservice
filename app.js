@@ -86,11 +86,13 @@ const collection_Name = (
   "links"  
 );
 
-/*** application modules ***/
+//*** application modules ***//
 // exports.get_Short_Link = short_Link_Generator;
 const short_Link_Gen = require('./short_link_generator.js');//.short_Link_Generator;
 const host_Name_Validator = require('./host_Name_Validator.js');
 const db_Helpers = require('./db_Helpers.js');
+const response_Helpers = require('./response_Helpers.js');
+//*** application modules end ***//
 
 // redundant here, has no practical use
 const end_Points_List = [
@@ -541,8 +543,7 @@ var http_Server = http.createServer(
                   //url, 
                   mongoLab_URI
                 )
-                .then(
-                  (db) => {
+                .then((db) => {
                     "use strict";    
                     // db gives access to the database
                     // scope ?
@@ -587,8 +588,7 @@ var http_Server = http.createServer(
                         can be piped
                         */
                         search_Result_Promise
-                          .then(
-                            (search_Result) => {
+                          .then((search_Result) => {
                               !(is_Debug_Mode) || console.log(
                                 //`query on ${collection_Name} content: ${doc}`);
                                 "search_Result on", collection_Name, "is:", search_Result);
@@ -596,101 +596,92 @@ var http_Server = http.createServer(
                               //console.log("collection_Name content:\n%j", docs);
 
                             // cases:
+                            // {"document": result, "is_New": true}
                             // - found existed short link
                             // - generated new short link
                             // - undefined -> something goes wrong
 
-                          if (
-                            doc // doc != null
-                            //docs.length > 0
-                            //({}).hasOwnProperty("b")
-                            //doc.hasOwnProperty("original_url")
-                          ) {
-                            // found
-                            json_Response_Obj = {
-                              //[TypeError: Cannot read property 'original_url' of undefined]
-                              "original_url": (
-                                // source_Link
-                                doc.original_url
-                                //docs[0].original_url
-                              ),
-                              "short_url": doc.short_url,
-                              "message": "stored link retrieved"
-                            };
-                          } else {
-                            // has no previously stored `link`
-                            // not found => new
-                            // must be unique within `link` collection
-                            // otherwise generate error on insert
+                            if (
+                              search_Result.document &&
+                              !(search_Result.is_New)
+                            ) {
+                              // found
+                              json_Response_Obj = {
+                                //[TypeError: Cannot read property 'original_url' of undefined]
+                                "original_url": (
+                                  // source_Link
+                                  search_Result.document.original_url
+                                  //docs[0].original_url
+                                ),
+                                "short_url": search_Result.document.short_url,
+                                "message": "stored link retrieved"
+                              };
+                            } else if (
+                              search_Result.document &&
+                              search_Result.is_New
+                            ) {
+                              // has no previously stored `link`
+                              // not found => new
+                              // must be unique within `link` collection
+                              // otherwise generate error on insert
 
-                            // so, check for duplicate first / query mogoDB ?
-                            // or insert new(ly) generated link every time
-                            // until success ?
+                              // so, check for duplicate first / query mogoDB ?
+                              // or insert new(ly) generated link every time
+                              // until success ?
 
-                            // -> just bulk_Insert (3 + 1) new links
-                            // with high probability one of them will be unique
-                            // .then() -> problem is which one ?
+                              // -> just bulk_Insert (3 + 1) new links
+                              // with high probability one of them will be unique
+                              // .then() -> problem is which one ?
 
-                            // in that case -> maybe check / find (3 + 1) new links
-                            // in collection first
-                            // .then() -> .insertOne() one / first of them that does not found ?
+                              // in that case -> maybe check / find (3 + 1) new links
+                              // in collection first
+                              // .then() -> .insertOne() one / first of them that does not found ?
 
-                            if (db && typeof(db) == "object") {
-                              if (db.hasOwnProperty('close')) {
-                                db.close();
-                              }
-                            }
-
-                            db_Helpers
-                              .bulk_Docs_Insert(
-                                MongoClient//: MongoClient obj <- explicit
-                                ,mongoLab_URI//: str
-                                ,collection_Name//: str
-                                ,documents//:list of obj
-                            );
-
-                            get_Unique_Short_Link(
-                              db,// mongoDB obj
-                              collection// mongoDB obj
-                            )//;
-                            //short_Link
-                              .then((short_Link) => {
-                                !(is_Debug_Mode) || console.log(
-                                  'then new stored short_Link for response', short_Link);
-                                json_Response_Obj = {
-                                  // ? mast contain query without allow ?
-                                  /*
-                                  {"protocol":"http:",
-                                  "slashes":true,"auth":null,
-                                  "host":"freecodecamp.com","port":null,
-                                  "hostname":"freecodecamp.com","hash":null,
-                                  "search":"?allow=true","query":{"allow":"true"},
-                                  "pathname":"/news/",
-                                  "path":"/news/?allow=true",
-                                  "href":"http://freecodecamp.com/news/?allow=true"}
-                                  */
-                                  "original_url": (
-                                    //(url_Obj.protocol ? url_Obj.protocol + "//" : "") +
-                                    //(url_Obj.host ? url_Obj.host : "") +
-                                    //url_Obj.pathname
-                                    source_Link
-                                  ),
-                                  // to show ful URL
-                                  "short_url": (request.socket.encrypted ? 'https://' : 'http://') +
-                                  request.headers.host + "/" +
-                                  // may create duplicates
-                                  // additional check needed
-                                  short_Link,
-                                  "message": "new link stored"
+                              if (db && typeof(db) == "object") {
+                                if (db.hasOwnProperty('close')) {
+                                  db.close();
                                 }
+                              }
 
-                                document_Obj = {
-                                  "original_url": json_Response_Obj.original_url,
-                                  // save only necessary data
-                                  "short_url": short_Link
-                                };
+                              !(is_Debug_Mode) || console.log(
+                                'then new stored short_Link for response', short_Link);
+                              json_Response_Obj = {
+                                // ? mast contain query without allow ?
+                                /*
+                                {"protocol":"http:",
+                                "slashes":true,"auth":null,
+                                "host":"freecodecamp.com","port":null,
+                                "hostname":"freecodecamp.com","hash":null,
+                                "search":"?allow=true","query":{"allow":"true"},
+                                "pathname":"/news/",
+                                "path":"/news/?allow=true",
+                                "href":"http://freecodecamp.com/news/?allow=true"}
+                                */
+                                "original_url": (
+                                  //(url_Obj.protocol ? url_Obj.protocol + "//" : "") +
+                                  //(url_Obj.host ? url_Obj.host : "") +
+                                  //url_Obj.pathname
+                                  source_Link
+                                ),
+                                // to show ful URL
+                                "short_url": (request.socket.encrypted ? 'https://' : 'http://') +
+                                request.headers.host + "/" +
+                                // may create duplicates
+                                // additional check needed
+                                short_Link,
+                                "message": "new link stored"
+                              }
 
-                                insert_Link_To_DB(
+                              document_Obj = {
+                                "original_url": json_Response_Obj.original_url,
+                                // save only necessary data
+                                "short_url": short_Link
+                              };
+
+                              db_Helpers
+                                // TODO check & test it
+                                // TODO refactor if needed / necessary
+                                .insert_Link_To_DB(
                                   db,
                                   collection,
                                   document_Obj,// dict
@@ -698,44 +689,65 @@ var http_Server = http.createServer(
                                   json_Response_Obj,
                                   //context_Message
                                   "res.on 'end' query.allow insertOne"
-                                );
-                              }
-                            );
-                          };
+                              );
+                            } else {
+                            }
 
-                        }
-                      )
-                      .catch((err) => {
-                          //(collection / cursor).find error: TypeError: Cannot read property 'then' of undefined
-                          console.log('(collection / cursor).find error:', err.stack);
-                          json_Response_Obj = {
-                            "error": err.message,
-                            "message": ".find:" + short_Link + " catch error when query.allow"
                           };
-                          send_JSON_Response(
+                        )
+                        .catch((err) => {
+                            //(collection / cursor).find error: TypeError: Cannot read property 'then' of undefined
+                            !(is_Debug_Mode) || console.log(
+                              'search_Result_Promise.then() error:', err.stack);
+                            json_Response_Obj = {
+                              "error": err.message,
+                              "message": short_Link + " search_Result_Promise.then() catch error when query.allow"
+                            };
+                            response_Helpers
+                              .send_JSON_Response(
+                                // obj -> writable stream
+                                response,
+                                json_Response_Obj,
+                                // context
+                                'request.on "end" query.allow search_Result_Promise.then() catch error'
+                            );
+                          }
+                        );
+                      }
+                    )
+                    .catch((err) => {
+                        !(is_Debug_Mode) || console.log(
+                          'collection.count().then() error:', err.stack);
+                        json_Response_Obj = {
+                          "error": err.message,
+                          "message": "collection.count().then() catch error when query.allow"
+                        };
+                        response_Helpers
+                          .send_JSON_Response(
                             // obj -> writable stream
                             response,
                             json_Response_Obj,
                             // context
-                            'request.on "end" query.allow .find catch error'
-                          );
-                        }
-                      );                        
-
+                            'request.on "end" query.allow collection.count().then() catch error'
+                        );
+                      }
+                    );
                   }
                 )
                 .catch((err) => {
-                  console.log('mongo.db.connect error:', err.message, ";when query.allow");
+                  !(is_Debug_Mode) || console.log(
+                    'mongo.db.connect error:', err.message, ";when query.allow");
                   json_Response_Obj = {
                     "error": err.message,
-                    "message": "mongo.db.connect catch error when query.allow"
+                    "message": "mongo.db.connect().then() catch error when query.allow"
                   };
-                  send_JSON_Response(
-                    // obj -> writable stream
-                    response,
-                    json_Response_Obj,
-                    // context
-                    'request.on "end" query.allow mongo.db.connect catch error'
+                  response_Helpers
+                    .send_JSON_Response(
+                      // obj -> writable stream
+                      response,
+                      json_Response_Obj,
+                      // context
+                      'request.on "end" query.allow mongo.db.connect() catch error'
                   );
                 }
               );

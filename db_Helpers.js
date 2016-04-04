@@ -2,6 +2,7 @@
 //*** application modules ***//
 const link_Gen = require('./short_link_generator.js');
 const comparator = require('./comparator.js');
+const response_Helpers = require('./response_Helpers.js');
 //*** application modules end ***//
 
 // helper
@@ -476,10 +477,10 @@ function insert_Link_To_DB(
   //source_Link,// str <- optional
   ,context_Message//: str <- optional
   ,is_Debug_Mode//: bool <- optional
-){//: => thenable Promise => ((null | void | Unit) | error)
+) {//: => thenable Promise => ((null | void | Unit) | error)
   "use strict";
   //const
-  var response_Helpers = require('./response_Helpers.js');
+  //var response_Helpers = require('./response_Helpers.js');
   var collection_Size = 0;
   //var short_Link; // = "";// = document_Obj.short_Link
   //var source_Link;
