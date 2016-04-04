@@ -38,9 +38,9 @@ const mongoLab_URI = (
   process.argv[3] ||
   "mongodb://localhost:27017/data_uri"
 );
-/*** config end ***/
+//*** config end ***//
 
-/*** application modules ***/
+//*** application modules ***//
 const host_Name_Validator = require('./host_Name_Validator.js');
 //.get_Short_Link()
 //.choose_Options()
@@ -52,9 +52,9 @@ const link_Gen = require('./short_link_generator.js');//.short_Link_Generator;
 //exports.make_Unique_Link
 const db_Helpers = require('./db_Helpers.js');
 const comparator = require('./comparator.js');
-/*** application modules end ***/
+//*** application modules end ***//
 
-/*** helpers ***/
+//*** helpers ***//
 // TODO create unique fields indexes
 // TODO query for (check if) field value in the list
 // TODO extract info about successfully inserted documents from 'insertMany' result
@@ -777,118 +777,17 @@ var test_10 = function(description){
     "use strict";
     console.log(description);
 
-    var result;
-    var results = [];
-    var short_Links = [];
-
-    //!(env.DEBUG_MODE.value) || console.log("mongoLab_URI is:", mongoLab_URI);
-    //!(env.DEBUG_MODE.value) || console.log("documents:\n", documents);
-    !(env.DEBUG_MODE.value) || console.log("short_Link_Size:", short_Link_Size);
-    var connection = MongoClient.connect(mongoLab_URI);//, function(err, db) {
-
-    short_Links.push(link_Gen.get_Short_Link(short_Link_Size));//, null, env.DEBUG_MODE.value));
-    short_Links.push(link_Gen.get_Short_Link(short_Link_Size));
-    short_Links.push(link_Gen.get_Short_Link(short_Link_Size));
-    short_Links.push(link_Gen.get_Short_Link(short_Link_Size + 1));
-
-    query = //{ $or: [ { quantity: { $lt: 20 } }, { price: 10 } ] }
-    {
-      $or: [
-        {
-          "original_url": original_Link//documents[0].original_url
-        }
-        //,{"short_url": documents[3].short_url}
-        ,{
-          "short_url": {
-            $in: [
-              short_Links[0]
-              ,short_Links[1]
-              ,short_Links[2]
-              ,short_Links[3]
-              //documents[1].short_url
-              //,documents[2].short_url
-              //,documents[3].short_url
-            ]
-          }
-        }
-        //documents[0]
-        //,documents[1]
-        //,documents[2]
-        //,documents[3]
-      ]
-      //"short_url": documents[3].short_url
-      //docs_Case_3[3].short_url
-      //"original_url": source_Link
-    };
-    !(env.DEBUG_MODE.value) || console.log("query: %j", query);
-    //return //Promise.resolve(
-      connection
-        .then((db) => {
-            // the new Collection instance if not in strict mode
-            var collection = db.collection(collection_Name);
-            var cursor = collection
-              // db.inventory.find ( { quantity: { $in: [20, 50] } } )
-              // one "original_url"
-              // many "short_url"
-              .find(
-                query
-              )
-              .project({"_id": false, "original_url": true, "short_url": 1})
-              .toArray()
-              .then((docs) => {
-                  !(env.DEBUG_MODE.value) || console.log("documents found:", docs.length);
-                  !(env.DEBUG_MODE.value) || console.log(docs);
-                  // Logging property names and values using Array.forEach
-                  Object
-                    //.getOwnPropertyNames(obj)
-                    .keys(docs)
-                    .forEach((val, idx, array) => {
-                    !(env.DEBUG_MODE.value) || console.log(
-                      val,'->',docs[val]);
-                  });
-                  //*** find original_Link in docs ***//
-                  //var filtered = arr.filter(func);
-                  results = docs.filter((doc) => {return doc.original_url == original_Link;});
-                  if (results.length > 0) {
-                    result = {"document": results[0], "is_New": false};
-                  } else {
-                    //*** find Arrays / lists difference ***//
-                    documents = [];
-                    documents.push({"original_url": original_Link, "short_url": short_Links[0]});
-                    documents.push({"original_url": original_Link, "short_url": short_Links[1]});
-                    documents.push({"original_url": original_Link, "short_url": short_Links[2]});
-                    documents.push({"original_url": original_Link, "short_url": short_Links[3]});
-
-                    results = comparator.lists_Difference(
-                      documents//: list (of obj)
-                      ,docs//: list (of obj)
-                      ,env.DEBUG_MODE.value
-                    );
-                    result = results.hasOwnProperty(0) ? results[0] : result;
-                    result = {"document": result, "is_New": true};
-                  }
-                  !(env.DEBUG_MODE.value) || console.log("result", result);
-
-                  db.close();
-
-                  return Promise.resolve(
-                    //docs
-                    result
-                  );
-                }
-              )
-              .catch((err) => {
-                console.log("cursor.then():", err.stack);
-                return Promise.reject(err);
-              }
-            );
-          }
-      )
-      .catch((err) => {
-        console.log("connection.then():", err.stack);
-        return Promise.reject(err);
-      }
+    var result = db_Helpers.find_Short_Link(
+      MongoClient//: MongoClient obj <- explicit
+      ,mongoLab_URI//: str
+      ,collection_Name//: str
+      ,original_Link//: str
+      ,short_Link_Size
+      ,env.DEBUG_MODE.value
     );
+    var results = [];
+
+    return result;
   }
 }("test 10: must " +
 "find matched documents in collection if any &\n" +
@@ -896,14 +795,14 @@ var test_10 = function(description){
 "with all (both) field values not in db.collection\n" +
 "or -> existing short_url" +
 "or -> undefined")
-//(MongoClient, mongoLab_URI, "tests", "o_L_0", 1)
+(MongoClient, mongoLab_URI, "tests", "o_L_0", 1)
 //(MongoClient, mongoLab_URI, "tests", "o_L_1", 1)
 //(MongoClient, mongoLab_URI, "tests", "o_L_2", 1)
 //(MongoClient, mongoLab_URI, "tests", "o_L_3", 1)
-(MongoClient, mongoLab_URI, "tests", "o_L_4", 1)
-//(MongoClient, mongoLab_URI, "tests", docs_Case_3)
-//(MongoClient, mongoLab_URI, "tests", docs_Case_2)
-//(MongoClient, mongoLab_URI, "tests", docs_Case_1)
+//(MongoClient, mongoLab_URI, "tests", "o_L_4", 1)
+///(MongoClient, mongoLab_URI, "tests", docs_Case_3)
+///(MongoClient, mongoLab_URI, "tests", docs_Case_2)
+///(MongoClient, mongoLab_URI, "tests", docs_Case_1)
 ;
 var test_11 = function(description){
   "use strict";

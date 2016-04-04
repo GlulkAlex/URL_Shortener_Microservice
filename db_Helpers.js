@@ -1,4 +1,9 @@
 "use strict";
+//*** application modules ***//
+const link_Gen = require('./short_link_generator.js');
+const comparator = require('./comparator.js');
+//*** application modules end ***//
+
 // helper
 // useless, nothing different form MongoClient.connect
 function get_DB(
@@ -669,7 +674,7 @@ function find_Short_Link(
                   results = comparator.lists_Difference(
                     documents//: list (of obj)
                     ,docs//: list (of obj)
-                    ,env.DEBUG_MODE.value
+                    ,is_Debug_Mode
                   );
                   result = results.hasOwnProperty(0) ? results[0] : result;
                   result = {"document": result, "is_New": true};
