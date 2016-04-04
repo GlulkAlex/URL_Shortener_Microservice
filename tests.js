@@ -778,10 +778,33 @@ var test_10 = function(description){
     var results = [];
 
     //console.log("mongoLab_URI is:", mongoLab_URI);
-    !(env.DEBUG_MODE.value) || console.log("documents: %j", documents);
+    !(env.DEBUG_MODE.value) || console.log("documents:\n", documents);
     var connection = MongoClient.connect(mongoLab_URI);//, function(err, db) {
 
-
+    query = //{ $or: [ { quantity: { $lt: 20 } }, { price: 10 } ] }
+    {
+      $or: [
+        {"original_url": documents[0].original_url}
+        //,{"short_url": documents[3].short_url}
+        ,{
+          "short_url": {
+            $in: [
+              ,documents[1].short_url
+              ,documents[2].short_url
+              ,documents[3].short_url
+            ]
+          }
+        }
+        //documents[0]
+        //,documents[1]
+        //,documents[2]
+        //,documents[3]
+      ]
+      //"short_url": documents[3].short_url
+      //docs_Case_3[3].short_url
+      //"original_url": source_Link
+    };
+    !(env.DEBUG_MODE.value) || console.log("query: %j", query);
     //return //Promise.resolve(
       connection
         .then((db) => {
@@ -792,47 +815,35 @@ var test_10 = function(description){
               // one "original_url"
               // many "short_url"
               .find(
-                //{ $or: [ { quantity: { $lt: 20 } }, { price: 10 } ] }
-                {
-                  $or: [
-                    {"original_url": documents[0].original_url}
-                    //,{"short_url": documents[3].short_url}
-                    ,{
-                      "short_url": {
-                        $in: [
-                          ,documents[1].short_url
-                          ,documents[2].short_url
-                          ,documents[3].short_url
-                        ]
-                      }
-                    }
-                    //documents[0]
-                    //,documents[1]
-                    //,documents[2]
-                    //,documents[3]
-                  ]
-                  //"short_url": documents[3].short_url
-                  //docs_Case_3[3].short_url
-                  //"original_url": source_Link
-                }
+                query
               )
               .project({"_id": false, "original_url": true, "short_url": 1})
               .toArray()
               .then((docs) => {
                   !(env.DEBUG_MODE.value) || console.log("documents found:", docs.length);
-                  !(env.DEBUG_MODE.value) || console.log("%j", docs);
+                  !(env.DEBUG_MODE.value) || console.log(docs);
                   // Logging property names and values using Array.forEach
                   Object
                     //.getOwnPropertyNames(obj)
                     .keys(docs)
                     .forEach((val, idx, array) => {
                     !(env.DEBUG_MODE.value) || console.log(
-                      val + ' -> ' + docs[val]);
+                      val,'->',docs[val]);
                   });
-                  //*** find Arrays / lists difference ***///
+                  //*** find Arrays / lists difference ***//
+                  results = comparator.lists_Difference(
+                    documents//: list (of obj)
+                    ,docs//: list (of obj)
+                    ,env.DEBUG_MODE.value
+                  );
+                  result = results.hasOwnProperty(0) ? results[0] : result
+                  !(env.DEBUG_MODE.value) || console.log("result", result);
                   db.close();
 
-                  return Promise.resolve(docs);
+                  return Promise.resolve(
+                    //docs
+                    result
+                  );
                 }
               )
               .catch((err) => {
@@ -848,8 +859,13 @@ var test_10 = function(description){
       }
     );
   }
-}("test 10: must find matched documents in collection if any & return 1st non-matched document")
+}("test 10: must " +
+"find matched documents in collection if any &\n " +
+"return 1st non-matched document\n " +
+"with all (both) field values not in db.collection")
 //(MongoClient, mongoLab_URI, "tests", docs_Case_3)
+(MongoClient, mongoLab_URI, "tests", docs_Case_2)
+//(MongoClient, mongoLab_URI, "tests", docs_Case_1)
 ;
 var test_11 = function(description){
   "use strict";
@@ -879,8 +895,14 @@ var test_11 = function(description){
 
     return results;
   }
-}("test 11: must return elements form this list that are not in that list")
-(docs_Case_2, docs_Case_3)
+}("test 11: must " +
+"return elements form this list that are not in that list\n " +
+"criterion: no duplicated field values\n " +
+"only unique once")
+//(docs_Case_2, docs_Case_3)
+//([], [])
+//([], docs_Case_3)
+//(docs_Case_2, [])
 ;
 /*** tests end ***/
 

@@ -12,7 +12,7 @@ function lists_Difference(
   //source
   this_List//: list (of obj)
   ,other_List//: list (of obj)
-  ,is_Debug_Mode//: bool
+  ,is_Debug_Mode//: bool <- optional
 ){//: => list | undefined
   "use strict";
   var difference = [];
@@ -24,11 +24,22 @@ function lists_Difference(
   var is_In_Other = false;
   // considering
   // cases:
-  // [] vs. [], empty vs. empty => [] | undefined
-  // [] vs. [Some] => [] | undefined
+  // [] vs. [], empty vs. empty => [] | this_List | undefined
+  // [] vs. [Some] => [] | this_List | undefined
   // [Some] vs. [] => [Some] | this_List
   // [Some] vs. [Some], this_List.length == other_List.length
   // [Some] vs. [Some], this_List.length != other_List.length
+
+  if (
+    this_List.length == 0 ||
+    other_List.length == 0
+  ) {
+    return this_List;
+  }
+  //*** Assuming that
+  //*** if lists non-empty then
+  //*** they both contain objects with fields .original_url && .short_url
+  //***
   // nested iterator ->
   // each element form this_List against
   // each element form other_List
@@ -61,11 +72,15 @@ function lists_Difference(
           //this_Elem == other_Elem
           //assert.deepEqual(this_Elem, other_Elem)
           (is_In_Other) ||
-          (this_Elem.original_url == other_Elem.original_url &&
+          // this_Elem.hasOwnProperty('original_url') &&
+          // this_Elem.hasOwnProperty('short_url') &&
+          // other_Elem.hasOwnProperty('original_url') &&
+          // other_Elem.hasOwnProperty('short_url') &&
+          (this_Elem.original_url == other_Elem.original_url ||
           this_Elem.short_url == other_Elem.short_url)
         ) {
           !(is_Debug_Mode) ||
-            console.log(this_Elem, "==", other_Elem);
+            console.log(this_Elem, "have common field's values", other_Elem);
           is_In_Other = true;
           break;
         }
