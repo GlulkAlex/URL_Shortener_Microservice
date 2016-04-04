@@ -51,6 +51,25 @@ function get_Short_Link_Length(
   );
 }
 
+/*
+simplification concept / idea / gist:
+- do not need to know current collection size
+  just enough to know max length of "short_url"
+- then it will be enough to
+  generate (for example) 3 (probably distinct) new "short_url"
+  of current max "short_url".length
+  & one new "short_url" of current max "short_url".length + 1 (fail save)
+
+Drawback:
+- still needed to do one additional query to DB upfront
+  so, at least 2 requests needed:
+  - for collection size or
+  max "short_url".length
+  - for existing "original_url" or "short_url"
+  depending to user request
+  at worst up to 3 requests total:
+  - one for inserting new "original_url" => "short_url"
+*/
 function short_Link_Generator(
   //collection_Size,//: int
   short_Link_Size,//int default:1, calculated / depended from 'collection_Size'

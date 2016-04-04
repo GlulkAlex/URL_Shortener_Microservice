@@ -12,6 +12,7 @@ function lists_Difference(
   //source
   this_List//: list (of obj)
   ,other_List//: list (of obj)
+  ,is_Debug_Mode//: bool
 ){//: => list | undefined
   "use strict";
   var difference = [];
@@ -38,13 +39,33 @@ function lists_Difference(
       is_In_Other = false;
       this_Elem = this_List[this_Indx];
       for (other_Indx in other_List) {
-        other_Elem = this_List[other_Indx];
+        other_Elem = other_List[other_Indx];
         // must be compare objects content
         // assert.deepEqual({a:1,b:1}, {b:1,a:1});
+        /*
+        try {
+          assert.deepEqual(this_Elem, other_Elem);
+          is_In_Other = true;
+          //break;
+        } catch(err) {
+          // 'AssertionError' expected
+          // The properties
+          // error.code and error.errno are
+          // aliases of one another and
+          // return the same value.
+          //!(env.DEBUG_MODE.value) ||
+          console.log(err.code, err.errno, err.message);
+        }
+        */
         if (
-          this_Elem == other_Elem
+          //this_Elem == other_Elem
           //assert.deepEqual(this_Elem, other_Elem)
+          (is_In_Other) ||
+          (this_Elem.original_url == other_Elem.original_url &&
+          this_Elem.short_url == other_Elem.short_url)
         ) {
+          !(is_Debug_Mode) ||
+            console.log(this_Elem, "==", other_Elem);
           is_In_Other = true;
           break;
         }

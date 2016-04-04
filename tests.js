@@ -716,7 +716,8 @@ var test_9 = function(description){
           (response) => {
             console.log(`Got response: ${response.statusCode}`);
             console.log('headers: ', response.headers);
-            var contentType = response.getHeader ? response.getHeader('content-type') : response.headers['content-type'];
+            var contentType = (
+              response.getHeader ? response.getHeader('content-type') : response.headers['content-type']);
 
             //readable
             //response.resume();
@@ -765,9 +766,10 @@ var test_10 = function(description){
   // curred
   return function(
     MongoClient//: MongoClient obj <- explicit
-    ,mongoLab_URI//:str
-    ,collection_Name//:str
-    ,documents//:list of obj
+    ,mongoLab_URI//: str
+    ,collection_Name//: str
+    ,documents//: list of obj
+    ,query//: query obj
   ) {//: => Promise | thenable ((dict | obj) | undefined | error)
     "use strict";
     console.log(description);
@@ -786,16 +788,28 @@ var test_10 = function(description){
             // the new Collection instance if not in strict mode
             var collection = db.collection(collection_Name);
             var cursor = collection
+              // db.inventory.find ( { quantity: { $in: [20, 50] } } )
+              // one "original_url"
+              // many "short_url"
               .find(
                 //{ $or: [ { quantity: { $lt: 20 } }, { price: 10 } ] }
                 {
                   $or: [
-                    //{"short_url": documents[0].short_url}
+                    {"original_url": documents[0].original_url}
                     //,{"short_url": documents[3].short_url}
-                    documents[0]
-                    ,documents[1]
-                    ,documents[2]
-                    ,documents[3]
+                    ,{
+                      "short_url": {
+                        $in: [
+                          ,documents[1].short_url
+                          ,documents[2].short_url
+                          ,documents[3].short_url
+                        ]
+                      }
+                    }
+                    //documents[0]
+                    //,documents[1]
+                    //,documents[2]
+                    //,documents[3]
                   ]
                   //"short_url": documents[3].short_url
                   //docs_Case_3[3].short_url
@@ -807,6 +821,14 @@ var test_10 = function(description){
               .then((docs) => {
                   !(env.DEBUG_MODE.value) || console.log("documents found:", docs.length);
                   !(env.DEBUG_MODE.value) || console.log("%j", docs);
+                  // Logging property names and values using Array.forEach
+                  Object
+                    //.getOwnPropertyNames(obj)
+                    .keys(docs)
+                    .forEach((val, idx, array) => {
+                    !(env.DEBUG_MODE.value) || console.log(
+                      val + ' -> ' + docs[val]);
+                  });
                   //*** find Arrays / lists difference ***///
                   db.close();
 
@@ -843,16 +865,16 @@ var test_11 = function(description){
     var results = [];
 
     !(env.DEBUG_MODE.value) || console.log(
-      "this_List: %j", this_List
-      ,"\nvs."
-      ,"that_List: %j", other_List
+      "this_List:\n", this_List
+      ,"\nvs.\nthat_List:\n", other_List
     );
     results = comparator.lists_Difference(
       this_List//: list (of obj)
       ,other_List//: list (of obj)
+      ,env.DEBUG_MODE.value
     );
     !(env.DEBUG_MODE.value) || console.log(
-      "lists_Difference: %j", results
+      "lists_Difference:\n", results
     );
 
     return results;
