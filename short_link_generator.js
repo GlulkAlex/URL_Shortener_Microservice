@@ -72,7 +72,7 @@ Drawback:
 */
 function short_Link_Generator(
   //collection_Size,//: int
-  short_Link_Size,//int default:1, calculated / depended from 'collection_Size'
+  short_Link_Size,//: int default:1, calculated / depended from 'collection_Size'
   // using `get_Short_Link_Length`
   // explicit (not from global)
   options_List,//: list of chars
@@ -134,7 +134,7 @@ function short_Link_Generator(
   }
   */
   if (is_Debug_Mode){
-    console.log("symbols_List:", JSON.stringify(symbols_List));    
+    console.log("symbols_List:", JSON.stringify(options_List));
   }
   // Math.random() returns 
   // a random number between 0 (inclusive),  and 1 (exclusive)   

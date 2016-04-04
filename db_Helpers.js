@@ -580,6 +580,123 @@ function insert_Link_To_DB(
   //return //null;//side effect //void //Unit
 }
 
+/* jshint esversion: 6, laxcomma: true */
+function find_Short_Link(
+  MongoClient//: MongoClient obj <- explicit
+  ,mongoLab_URI//: str
+  ,collection_Name//: str
+  ,original_Link//: str
+  ,short_Link_Size//: int
+  //,documents//: list of obj
+  //,query//: query obj
+  ,is_Debug_Mode//: bool <- optional
+) {//: => Promise | thenable ((dict | obj) | undefined | error)
+  "use strict";
+
+  var result;
+  var documents;
+  var query;
+  var results = [];
+  var short_Links = [];
+
+  //!(env.DEBUG_MODE.value) || console.log("mongoLab_URI is:", mongoLab_URI);
+  !(is_Debug_Mode) || console.log("short_Link_Size:", short_Link_Size);
+  var connection = MongoClient.connect(mongoLab_URI);//, function(err, db) {
+
+  short_Links.push(link_Gen.get_Short_Link(short_Link_Size));//, null, env.DEBUG_MODE.value));
+  short_Links.push(link_Gen.get_Short_Link(short_Link_Size));
+  short_Links.push(link_Gen.get_Short_Link(short_Link_Size));
+  short_Links.push(link_Gen.get_Short_Link(short_Link_Size + 1));
+
+  // one "original_url"
+  // many "short_url"
+  query = {
+    $or: [
+      {
+        "original_url": original_Link
+      }
+      ,{
+        "short_url": {
+          $in: [
+            short_Links[0]
+            ,short_Links[1]
+            ,short_Links[2]
+            ,short_Links[3]
+          ]
+        }
+      }
+    ]
+  };
+  !(is_Debug_Mode) || console.log("query: %j", query);
+  //return Promise.resolve(
+  return connection
+      .then((db) => {
+          // the new Collection instance if not in strict mode
+          var collection = db.collection(collection_Name);
+          var cursor = collection
+            .find(
+              query
+            )
+            .project({"_id": false, "original_url": true, "short_url": 1})
+            .toArray()
+            .then((docs) => {
+                !(is_Debug_Mode) || console.log("documents found:", docs.length);
+                !(is_Debug_Mode) || console.log(docs);
+                if (is_Debug_Mode) {
+                  // Logging property names and values using Array.forEach
+                  Object
+                    //.getOwnPropertyNames(obj)
+                    .keys(docs)
+                    .forEach((val, idx, array) => {
+                    //!(is_Debug_Mode) ||
+                    console.log(
+                      val,'->',docs[val]);
+                  });
+                }
+                //*** find original_Link in docs ***//
+                //var filtered = arr.filter(func);
+                results = docs.filter((doc) => {return doc.original_url == original_Link;});
+                if (results.length > 0) {
+                  result = {"document": results[0], "is_New": false};
+                } else {
+                  //*** find Arrays / lists difference ***//
+                  documents = [];
+                  documents.push({"original_url": original_Link, "short_url": short_Links[0]});
+                  documents.push({"original_url": original_Link, "short_url": short_Links[1]});
+                  documents.push({"original_url": original_Link, "short_url": short_Links[2]});
+                  documents.push({"original_url": original_Link, "short_url": short_Links[3]});
+
+                  results = comparator.lists_Difference(
+                    documents//: list (of obj)
+                    ,docs//: list (of obj)
+                    ,env.DEBUG_MODE.value
+                  );
+                  result = results.hasOwnProperty(0) ? results[0] : result;
+                  result = {"document": result, "is_New": true};
+                }
+                !(is_Debug_Mode) || console.log("result", result);
+
+                db.close();
+
+                return Promise.resolve(
+                  result
+                );
+              }
+            )
+            .catch((err) => {
+              console.log("cursor.then():", err.stack);
+              return Promise.reject(err);
+            }
+          );
+        }
+    )
+    .catch((err) => {
+      console.log("connection.then():", err.stack);
+      return Promise.reject(err);
+    }
+  );
+}
+
 // just working code examples
 if (false) {
 mongo
@@ -693,3 +810,4 @@ exports.create_Unique_Index = create_Unique_Index;
 exports.add_Docs = add_Docs;
 exports.bulk_Docs_Insert = bulk_Docs_Insert;
 exports.make_Unique_Link = generate_Unique_Short_Link;
+exports.find_Short_Link = find_Short_Link;

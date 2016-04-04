@@ -756,7 +756,8 @@ var test_9 = function(description){
 // res.type('json');               // => 'application/json'
 // res.type('application/json');   // => 'application/json'
 //("https://api-url-shortener-microservice.herokuapp.com/lInK", "application/json")
-//("https://api-url-shortener-microservice.herokuapp.com/new/http://expressjs.com/en/4x/api.html#res.type", "application/json")
+//("https://api-url-shortener-microservice.herokuapp.com/new/http://expressjs.com/en/4x/api.html#res.type"
+//, "application/json")
 ;
 
 /* jshint esversion: 6, laxcomma: true */
@@ -768,6 +769,8 @@ var test_10 = function(description){
     MongoClient//: MongoClient obj <- explicit
     ,mongoLab_URI//: str
     ,collection_Name//: str
+    ,original_Link//: str
+    ,short_Link_Size//: int
     ,documents//: list of obj
     ,query//: query obj
   ) {//: => Promise | thenable ((dict | obj) | undefined | error)
@@ -776,22 +779,35 @@ var test_10 = function(description){
 
     var result;
     var results = [];
+    var short_Links = [];
 
-    //console.log("mongoLab_URI is:", mongoLab_URI);
-    !(env.DEBUG_MODE.value) || console.log("documents:\n", documents);
+    //!(env.DEBUG_MODE.value) || console.log("mongoLab_URI is:", mongoLab_URI);
+    //!(env.DEBUG_MODE.value) || console.log("documents:\n", documents);
+    !(env.DEBUG_MODE.value) || console.log("short_Link_Size:", short_Link_Size);
     var connection = MongoClient.connect(mongoLab_URI);//, function(err, db) {
+
+    short_Links.push(link_Gen.get_Short_Link(short_Link_Size));//, null, env.DEBUG_MODE.value));
+    short_Links.push(link_Gen.get_Short_Link(short_Link_Size));
+    short_Links.push(link_Gen.get_Short_Link(short_Link_Size));
+    short_Links.push(link_Gen.get_Short_Link(short_Link_Size + 1));
 
     query = //{ $or: [ { quantity: { $lt: 20 } }, { price: 10 } ] }
     {
       $or: [
-        {"original_url": documents[0].original_url}
+        {
+          "original_url": original_Link//documents[0].original_url
+        }
         //,{"short_url": documents[3].short_url}
         ,{
           "short_url": {
             $in: [
-              ,documents[1].short_url
-              ,documents[2].short_url
-              ,documents[3].short_url
+              short_Links[0]
+              ,short_Links[1]
+              ,short_Links[2]
+              ,short_Links[3]
+              //documents[1].short_url
+              //,documents[2].short_url
+              //,documents[3].short_url
             ]
           }
         }
@@ -830,14 +846,29 @@ var test_10 = function(description){
                     !(env.DEBUG_MODE.value) || console.log(
                       val,'->',docs[val]);
                   });
-                  //*** find Arrays / lists difference ***//
-                  results = comparator.lists_Difference(
-                    documents//: list (of obj)
-                    ,docs//: list (of obj)
-                    ,env.DEBUG_MODE.value
-                  );
-                  result = results.hasOwnProperty(0) ? results[0] : result
+                  //*** find original_Link in docs ***//
+                  //var filtered = arr.filter(func);
+                  results = docs.filter((doc) => {return doc.original_url == original_Link;});
+                  if (results.length > 0) {
+                    result = {"document": results[0], "is_New": false};
+                  } else {
+                    //*** find Arrays / lists difference ***//
+                    documents = [];
+                    documents.push({"original_url": original_Link, "short_url": short_Links[0]});
+                    documents.push({"original_url": original_Link, "short_url": short_Links[1]});
+                    documents.push({"original_url": original_Link, "short_url": short_Links[2]});
+                    documents.push({"original_url": original_Link, "short_url": short_Links[3]});
+
+                    results = comparator.lists_Difference(
+                      documents//: list (of obj)
+                      ,docs//: list (of obj)
+                      ,env.DEBUG_MODE.value
+                    );
+                    result = results.hasOwnProperty(0) ? results[0] : result;
+                    result = {"document": result, "is_New": true};
+                  }
                   !(env.DEBUG_MODE.value) || console.log("result", result);
+
                   db.close();
 
                   return Promise.resolve(
@@ -860,11 +891,18 @@ var test_10 = function(description){
     );
   }
 }("test 10: must " +
-"find matched documents in collection if any &\n " +
-"return 1st non-matched document\n " +
-"with all (both) field values not in db.collection")
+"find matched documents in collection if any &\n" +
+"return -> new short_Link as (from) 1st non-matched document if any\n" +
+"with all (both) field values not in db.collection\n" +
+"or -> existing short_url" +
+"or -> undefined")
+//(MongoClient, mongoLab_URI, "tests", "o_L_0", 1)
+//(MongoClient, mongoLab_URI, "tests", "o_L_1", 1)
+//(MongoClient, mongoLab_URI, "tests", "o_L_2", 1)
+//(MongoClient, mongoLab_URI, "tests", "o_L_3", 1)
+(MongoClient, mongoLab_URI, "tests", "o_L_4", 1)
 //(MongoClient, mongoLab_URI, "tests", docs_Case_3)
-(MongoClient, mongoLab_URI, "tests", docs_Case_2)
+//(MongoClient, mongoLab_URI, "tests", docs_Case_2)
 //(MongoClient, mongoLab_URI, "tests", docs_Case_1)
 ;
 var test_11 = function(description){
@@ -898,7 +936,7 @@ var test_11 = function(description){
 }("test 11: must " +
 "return elements form this list that are not in that list\n " +
 "criterion: no duplicated field values\n " +
-"only unique once")
+"only unique one")
 //(docs_Case_2, docs_Case_3)
 //([], [])
 //([], docs_Case_3)
