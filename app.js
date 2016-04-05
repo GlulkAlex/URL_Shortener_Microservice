@@ -458,11 +458,7 @@ var http_Server = http.createServer(
         //*** routing ***//
         //***************//
         if (
-          url_Obj.path == end_Points_List[0] //||
-          //url_Obj.path == end_Points_List[2] ||
-          //url_Obj.path == end_Points_List[3] ||
-          //url_Obj.path == end_Points_List[4]
-        ) {    
+          url_Obj.path == end_Points_List[0] ) {
             /*
             browser cache may prevent proper routing
             if it decides that page content is not changing
@@ -506,9 +502,8 @@ var http_Server = http.createServer(
           !(is_Debug_Mode) || console.log(
             'request.on "end" source_Link:', source_Link);
           if (
-            true
             //source_Link.length > 0
-          ) {
+            true ) {
             !(is_Debug_Mode) || console.log(
               'request.on "end" something after "new/" in:', url_Obj.path);
             url_Obj = url.parse(source_Link, true);
@@ -521,8 +516,7 @@ var http_Server = http.createServer(
             if (
               //url_Obj.query.allow
               //url_Obj.search != "" && url_Obj.query != {}
-              query_Allow_Prop
-            ) {
+              query_Allow_Prop ) {
               // ? replace `search` with "" ?
               // skip `search` & all after `search`
               source_Link = source_Link.slice(0, source_Link.indexOf("?"));
@@ -565,15 +559,17 @@ var http_Server = http.createServer(
 
                         !(is_Debug_Mode) || console.log(
                           //`trying to find original_url == ${source_Link} in ${collection_Name}`);
-                          "trying to find \'original_url\' ==", source_Link, "doc in/among(st)", count, collection_Name,
+                          "trying to find \'original_url\' ==", source_Link,
+                          "doc in/among(st)", count, collection_Name,
                           "`s documents");
-                        var search_Result_Promise = db_Helpers.find_Short_Link(
-                          MongoClient//: MongoClient obj <- explicit
-                          ,mongoLab_URI//: str
-                          //,collection_Name//: str
-                          ,source_Link//,original_Link//: str
-                          ,short_Link_Size
-                          ,is_Debug_Mode//,env.DEBUG_MODE.value
+                        var search_Result_Promise = db_Helpers
+                          .find_Short_Link(
+                            MongoClient//: MongoClient obj <- explicit
+                            ,mongoLab_URI//: str
+                            //,collection_Name//: str
+                            ,source_Link//,original_Link//: str
+                            ,short_Link_Size
+                            ,is_Debug_Mode//,env.DEBUG_MODE.value
                         );
                         // has content / items for search
                         /*
@@ -774,18 +770,16 @@ var http_Server = http.createServer(
                 5xx: Server Error 
                   505 HTTP Version Not Supported
               */
-              console.log(`Checking url_Obj.protocol: ${url_Obj.protocol}`);            
+              !(is_Debug_Mode) || console.log("Checking url_Obj.protocol:", url_Obj.protocol);
               if (
                 url_Obj.protocol == "http:" || 
-                url_Obj.protocol == "https:"
-              ) {
-                console.log(`Checking url_Obj.host: ${url_Obj.host}`);
+                url_Obj.protocol == "https:" ) {
+                !(is_Debug_Mode) || console.log("Checking url_Obj.host:", url_Obj.host);
                 if (
                   // hyphens '-' must be OK within (not leading / trailing), but underscores '_' not
                   ///^([^\W\s]+)((\.)([^\W\s]+))*((\.)([^\W\s]+))$/g.test(url_Obj.host)
-                  host_Name_Validator.is_Host_Name_Valid(url_Obj.host)
-                ) {
-                  console.log(`Checking link: ${source_Link} in www`);
+                  host_Name_Validator.is_Host_Name_Valid(url_Obj.host) ) {
+                  !(is_Debug_Mode) || console.log(`Checking link: ${source_Link} in www`);
                   //Error: Protocol "https:" not supported. Expected "http:"
                   // receive 400 Bad Request	 => The request cannot be fulfilled due to bad syntax
                   // on some URL like: https://soundcloud.com/you/collection
@@ -806,7 +800,7 @@ var http_Server = http.createServer(
                       source_Link,
                       (res) => {
                         // 302 Found	The requested page has moved temporarily to a new URL   
-                        console.log(`Got response: ${res.statusCode}`);
+                        !(is_Debug_Mode) || console.log("Got response:", res.statusCode);
                         /*
                         // to consume response body
                         // or use 'res.resume()';
@@ -820,7 +814,8 @@ var http_Server = http.createServer(
                           "get_Response": res.statusCode,
                           "source_Link": source_Link
                         };  
-                        console.log('request.on "end" http.get json_Response_Obj: %j', json_Response_Obj);
+                        !(is_Debug_Mode) || console.log(
+                          'request.on "end" http.get json_Response_Obj: %j', json_Response_Obj);
 
                         /*
                         readable.pipe(destination[, options])
@@ -842,51 +837,19 @@ var http_Server = http.createServer(
                         res
                           .on(
                             'error',
-                            (err) => {console.log(`res(response) from www error: ${err.stack}`);}
+                            (err) => {
+                              !(is_Debug_Mode) || console.log("res(response) from www error:", err.stack);}
                         );
                         res
                           //.on(
                           .once(
                             'end', 
                             () => {
-                              console.log(`Checking MongoDB for stored source_Link: ${source_Link}`);
+                              !(is_Debug_Mode) || console.log(
+                                "Checking MongoDB for stored source_Link:", source_Link);
                               if (res.statusCode < 400) {
-                              mongo
-                              .connect(
-                                mongoLab_URI//,
-                              )
-                              .then(
-                                //null,
-                                (
-                                  //err, 
-                                  db
-                                ) => {
-                                  "use strict";
-                                  // db gives access to the database
-                                  // scope ?
-                                  //const 
-                                  var collection = db.collection(collection_Name);
+                                // TODO refactor using get_Short_Link_Length(), find_Short_Link() & insert_Link_To_DB()
 
-                                  var cursor = collection
-                                  .find(
-                                    {
-                                      "original_url": source_Link
-                                    }
-                                  )
-                                  // use index
-                                  // ? must be 'text index' ?
-                                  // A collection can have at most one 'text' index.
-                                  // But it is possible to
-                                  // index multiple fields for the 'text' index.
-                                  // `hint` or more likely `indexes` fails
-                                  //.hint('original_url')
-                                  //.hint("_fts")
-                                  //.hint("_ftsx")
-                                  .limit(1)
-                                  .project({"_id": false, "original_url": true, "short_url": 1})
-                                  // toArray(callback) => {Promise}
-                                  .toArray()
-                                  .then(
                                     (docs) => {
                                       console.log('find result: %j', docs); 
                                       if (docs.length > 0) {
@@ -923,11 +886,6 @@ var http_Server = http.createServer(
                                           'res.on "end" cursor.find not found'  
                                         );
                                         */
-                                        //short_Link =
-                                        get_Unique_Short_Link(
-                                          db,// mongoDB obj
-                                          collection// mongoDB obj
-                                        )//;
                                         .then((short_Link) => {
                                             json_Response_Obj = {
                                               "original_url": (
@@ -946,14 +904,15 @@ var http_Server = http.createServer(
                                               "short_url": short_Link
                                             };
 
-                                            insert_Link_To_DB(
-                                              db,
-                                              collection,
-                                              document_Obj,// dict
-                                              response,// HTTP(S) obj
-                                              json_Response_Obj,
-                                              //context_Message
-                                              "res.on 'end' cursor.find not found"
+                                            db_Helpers
+                                              .insert_Link_To_DB(
+                                                db,
+                                                collection,
+                                                document_Obj,// dict
+                                                response,// HTTP(S) obj
+                                                json_Response_Obj,
+                                                //context_Message
+                                                "res.on 'end' cursor.find not found"
                                             );
                                           }
                                         );
