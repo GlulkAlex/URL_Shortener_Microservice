@@ -21,11 +21,12 @@ function get_DB(
 }
 
 function get_Collection(
-  mongoLab_URI//:str
-  ,collection_Name//:str
+  MongoClient//: MongoClient obj <- explicit
+  ,mongoLab_URI//: str
+  ,collection_Name//: str
   ,db//: obj [db] <- optional
-  ,MongoClient//: MongoClient obj <- explicit
-)/* => Promise(collection) */{
+  ,is_Debug_Mode//: bool <- optional
+) {//: => Promise({db, collection}) <- contain collection.s.db
   "use strict";
 
   if (db) {
@@ -33,14 +34,19 @@ function get_Collection(
       .resolve(
         //() => {
           //var collection =
-          db.collection(collection_Name)//;
+          {
+            "db": db,
+            "collection": db.collection(collection_Name)
+          }
 
           //return collection;
         //}
     );
   } else {
+    // guard
     if (MongoClient) {
       //var connection = MongoClient.connect(mongoLab_URI);//, function(err, db) {
+      // guard
       collection_Name = collection_Name ? collection_Name : 'tests';
       //db = Promise.resolve(get_DB(mongoLab_URI));
       //db = Promise.resolve(get_DB(mongoLab_URI).then((dB) => {return dB;}));
@@ -52,13 +58,15 @@ function get_Collection(
       // something like .flatMap needed ? or just db.close() in the right place ?
       // CORRECT (the function returns a promise, and the caller will handle the rejection)
       // Resolving with `thenables` to flatten nested then() calls
-      return Promise.resolve(
+      //return Promise.resolve(
         //connection
           //.then((db) => {return db;})
         //get_DB(mongoLab_URI)
         // same as
         // TypeError: Cannot read property 'connect' of undefined
-        MongoClient.connect(mongoLab_URI)
+      return MongoClient
+      //  MongoClient
+          .connect(mongoLab_URI)
           .then((db) => {
           // defined `this` does not make any changes on `pending`
           //.then(function(db) {
@@ -105,16 +113,31 @@ function get_Collection(
                   });
               });
               */
-              return db.collection(collection_Name);
+              return Promise.resolve({
+                "db": db,
+                "collection": db.collection(collection_Name)
+              });
+              //return Promise.resolve(db.collection(collection_Name));
+              //return db.collection(collection_Name);
             }
+          ).catch((err) => {
+            !(is_Debug_Mode) || console.log("connection err:", err.stack);
+
+            return Promise.reject(err);
+          }
         )
         // work, but changes nothing
         //.then((collection) => {return collection;})
         // TypeError: db.collection is not a function
         //db.collection(collection_Name)
-      );
+      //)
+      ;
     } else {
-      return Promise.resolve(console.log("missing MongoClient argument"));
+      var message = "missing MongoClient argument";
+
+      !(is_Debug_Mode) || console.log(message);
+
+      return Promise.reject(new Error(message));
     }
   }
 }
@@ -202,7 +225,7 @@ function create_Unique_Index(
   //,collection_Name//:str
   collection//: obj [collection]
   ,field_Name//:str
-)/* => Promise */{
+) {//: => Promise
   "use strict";
 
   //var collection = get_Collection(
@@ -412,13 +435,13 @@ function generate_Unique_Short_Link(
   var doc_Index;
   var doc;
   console.log('receive all docs in links.');
-  // TODO 1. 3 attempts will be enough, then if fails => link size + 1
+  // DONE 1. 3 attempts will be enough, then if fails => link size + 1
   // highly unlikely that all 3 random value will be the same, even for link size 1
   // link size + 1 as -> "fail safe"
-  // TODO 2. link size as parameter / argument (not collection_Size)
+  // maybe later DO 2. link size as parameter / argument (not collection_Size)
   // DONE 3. so refactor get_Short_Link
-  // TODO 4. replace check if (any) current link has match in DB
-  // TODO with bulk insert of all generated values
+  // DONE 4. replace check if (any) current link has match in DB
+  // with bulk insert of all generated values
   // assuming that at least one will succeed or all fails
   // TODO 4.1 so refactor return value to link list
   while (
@@ -467,12 +490,12 @@ function generate_Unique_Short_Link(
 
 // helper
 function insert_Link_To_DB(
-  db//: mongoDB obj
+  db//: mongoDB obj <- optional == collection.s.db;
   ,collection//: mongoDB obj
   ,document_Obj//: dict
-  //request,// HTTP(S) obj <- ? optional ?
+  //request,//: HTTP(S) obj <- ? optional ?
   ,response//: HTTP(S) obj
-  ,json_Response_Obj//: dict
+  ,json_Response_Obj//: dict <- ? optional ?
   //host, //protocol + // + host_name
   //source_Link,// str <- optional
   ,context_Message//: str <- optional
@@ -494,6 +517,15 @@ function insert_Link_To_DB(
   if (context_Message) {
   } else {
     context_Message = "request.on 'end' query.allow insertOne";
+  }
+  //!(is_Debug_Mode) || console.log('db:', db);
+  !(is_Debug_Mode) || console.log('db == null or undefined:', (db == null || db == undefined));
+  !(is_Debug_Mode) || console.log('typeof db:', typeof(db));
+  if (db) {} else {
+    db = collection.s.db;
+    //!(is_Debug_Mode) || console.log('collection.s.db:', db);
+    !(is_Debug_Mode) || console.log(
+      'db == null or undefined:', (db == null || db == undefined));
   }
   //*** defaults end ***//
 
@@ -521,67 +553,97 @@ function insert_Link_To_DB(
     "short_url": short_Link
   };
   */
-  return Promise
-    .resolve(() => {
+
   // guard
   // currently fires before link was generated
   if (document_Obj.short_url) {
+    var short_url = document_Obj.short_url;
+
     !(is_Debug_Mode) || console.log('short_url:', short_url, "provided");
-    collection
-      // insertOne(doc, options, callback) => {Promise}
-      .insertOne(
-        document_Obj
-        //JSON.stringify(document_Obj)
-      )
-      .then(
-        (result) => {//.result.n
-          //console.log(JSON.stringify(document_Obj));
-          !(is_Debug_Mode) || console.log('inserted document_Obj: %j', document_Obj);
-          !(is_Debug_Mode) || console.log(`result.result.n: ${result.result.n}`);
-          //console.log('result.result: %j', result.result);
-
-          response_Helpers.
-          send_JSON_Response(
-            // obj -> writable stream
-            response,
-            json_Response_Obj,
-            // context
-            context_Message
-          );
-
-          /* finaly */
-          db.close();
-          !(is_Debug_Mode) || console.log(`Close db after link search & insert `);
-        }
-      )
-      .catch(
-        (err) => {
-          // "E11000 duplicate key error index:
-          // links.$original_url_text_short_url_text dup key: { : \"com\", : 0.625 }
-          !(is_Debug_Mode) || console.log('(collection / cursor).insertOne error:', err.stack);
-          json_Response_Obj = {
-            "error": err.message,
-            "message": "on links.insertOne{'short_url':" + document_Obj.short_url + //short_Link +
-            "'original_url':" + document_Obj.original_url +
-            " catch error when query.allow"
-          };
-
-          response_Helpers.
-          send_JSON_Response(
-            // obj -> writable stream
-            response,
-            json_Response_Obj,
-            // context
-            'request.on "end" query.allow .insertOne catch error'
-          );
-        }
-    );
   } else {
-    !(is_Debug_Mode) || console.log('undefined / empty document_Obj.short_url');
-    //new Error(message)
+    var message = 'undefined / empty document_Obj.short_url';
 
+    /* finaly */
+    if (db) {
+      db.close();
+      !(is_Debug_Mode) || console.log("Close db after link insert");
+    }
+    !(is_Debug_Mode) || console.log(message);
+    //new Error(message)
+    return Promise.reject(new Error(message));
   }
-  });
+
+
+  //return Promise
+  //  .resolve(() => {
+  ///  .resolve(
+  return collection
+  //      collection
+          // insertOne(doc, options, callback) => {Promise}
+          .insertOne(
+            document_Obj
+            //JSON.stringify(document_Obj)
+          )
+          .then((result) => {//.result.n
+              //console.log(JSON.stringify(document_Obj));
+              !(is_Debug_Mode) || console.log('inserted document_Obj: %j', document_Obj);
+              !(is_Debug_Mode) || console.log(`result.result.n: ${result.result.n}`);
+              //console.log('result.result: %j', result.result);
+
+              // guard
+              if (response) {
+                response_Helpers.
+                  send_JSON_Response(
+                    // obj -> writable stream
+                    response,
+                    json_Response_Obj,
+                    // context
+                    context_Message
+                );
+              }
+
+              /* finaly */
+              if (db) {
+                db.close();
+                !(is_Debug_Mode) || console.log(`Close db after link insert `);
+              }
+
+              return Promise.resolve(result.result);
+            }
+          )
+          .catch((err) => {
+              // "E11000 duplicate key error index:
+              // links.$original_url_text_short_url_text dup key: { : \"com\", : 0.625 }
+              !(is_Debug_Mode) || console.log('(collection / cursor).insertOne error:', err.stack);
+              json_Response_Obj = {
+                "error": err.message,
+                "message": "on links.insertOne{'short_url':" + document_Obj.short_url + //short_Link +
+                "'original_url':" + document_Obj.original_url +
+                " catch error when query.allow"
+              };
+
+              // guard
+              if (response) {
+                response_Helpers.
+                  send_JSON_Response(
+                    // obj -> writable stream
+                    response,
+                    json_Response_Obj,
+                    // context
+                    'request.on "end" query.allow .insertOne catch error'
+                );
+              }
+              /* finaly */
+              if (db) {
+                db.close();
+                !(is_Debug_Mode) || console.log(`Close db after link insert `);
+              }
+
+              return Promise.reject(err);
+            }
+        );
+    //}()
+  //);
 
   //return //null;//side effect //void //Unit
 }
@@ -826,3 +888,4 @@ exports.add_Docs = add_Docs;
 exports.bulk_Docs_Insert = bulk_Docs_Insert;
 exports.make_Unique_Link = generate_Unique_Short_Link;
 exports.find_Short_Link = find_Short_Link;
+exports.insert_Link_To_DB = insert_Link_To_DB;

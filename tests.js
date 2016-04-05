@@ -55,9 +55,9 @@ const comparator = require('./comparator.js');
 //*** application modules end ***//
 
 //*** helpers ***//
-// TODO create unique fields indexes
-// TODO query for (check if) field value in the list
-// TODO extract info about successfully inserted documents from 'insertMany' result
+// DONE create unique fields indexes
+// DONE query for (check if) field value in the list
+// DONE but not exactly extract info about successfully inserted documents from 'insertMany' result
 // for
 // col.insertMany([{a:1}, {a:2}], function(err, r) {
 // r.insertedCount
@@ -365,7 +365,9 @@ var test_4 = function(
   assert.equal(actual_Results, expected_Results);
 
   return result;
-};//("test 4: all links must be non-empty", 1, 150000);/*() <- on / off */
+}
+//("test 4: all links must be non-empty", 1, 150000)//() <- on / off
+;
 
 // case 1: all docs -> unique
 /*
@@ -463,6 +465,7 @@ var test_5 = function(description){
       .then((db) => {
           // ? is it same (one / singleton) db object ?
           var collection_Promise = ///Promise.resolve(
+
           db_Helpers
             .get_Collection(
               mongoLab_URI,//:str
@@ -577,17 +580,26 @@ var test_6 = function(description){
   )/* => Promise ? */ {
     "use strict";
     console.log(description);
-    actual_Results = db_Helpers.clear_Links(
-      mongoLab_URI,//:str
-      collection_Name//:str
+    actual_Results = db_Helpers
+      .clear_Links(
+        mongoLab_URI,//:str
+        collection_Name//:str
     );
     console.log("typeof actual_Results:", (typeof actual_Results));
     // actual_Results: Promise { <pending> }
     console.log("actual_Results:", actual_Results);
     // databaseName: 'sandbox_mongo-db_v3-0'
-    //Promise.resolve(
-      actual_Results.then((db) => {console.log("db:", db); db.close();});
-    //);
+
+    return Promise.resolve(
+      actual_Results
+        .then((db) => {
+          console.log("db:", db);
+          db.close();
+
+          return db;
+        }
+      )
+    );
   };
 }("test 6: must drop collection & return current DB object");
 //("tests");
@@ -653,19 +665,19 @@ var test_8 = function(description){
     );
     actual_Results*/
     collection_Promise
-    .then((collection) => {
+      .then((collection) => {
 
-      console.log("collection:", collection);
-      //console.log("typeof actual_Results:", (typeof actual_Results));
-      // namespace: 'sandbox_mongo-db_v3-0.tests',
-      // name: 'tests',
-      // promiseLibrary: [Function: Promise],
-      //console.log("collection.db:%j", collection.db);
-      // TypeError: Cannot read property 'close' of undefined
-      //collection.db.close();
-      //collection.s.db.close();
-      var db = collection.s.db;
-      db.close();
+        console.log("collection:", collection);
+        //console.log("typeof actual_Results:", (typeof actual_Results));
+        // namespace: 'sandbox_mongo-db_v3-0.tests',
+        // name: 'tests',
+        // promiseLibrary: [Function: Promise],
+        //console.log("collection.db:%j", collection.db);
+        // TypeError: Cannot read property 'close' of undefined
+        //collection.db.close();
+        //collection.s.db.close();
+        var db = collection.s.db;
+        db.close();
     }).catch((err) => {console.log("collection_Promise then:", err.stack);}
     );
   };
@@ -806,7 +818,7 @@ var test_10 = function(description){
 "with all (both) field values not in db.collection\n" +
 "or -> existing short_url\n" +
 "or -> undefined")
-(MongoClient, mongoLab_URI, "tests", "o_L_0", 1)
+//(MongoClient, mongoLab_URI, "tests", "o_L_0", 1)
 //(MongoClient, mongoLab_URI, "tests", "o_L_1", 1)
 //(MongoClient, mongoLab_URI, "tests", "o_L_2", 1)
 //(MongoClient, mongoLab_URI, "tests", "o_L_3", 1)
@@ -815,6 +827,7 @@ var test_10 = function(description){
 ///(MongoClient, mongoLab_URI, "tests", docs_Case_2)
 ///(MongoClient, mongoLab_URI, "tests", docs_Case_1)
 ;
+
 var test_11 = function(description){
   "use strict";
   // curred
@@ -851,6 +864,106 @@ var test_11 = function(description){
 //([], [])
 //([], docs_Case_3)
 //(docs_Case_2, [])
+;
+
+var test_12 = function(description){
+  "use strict";
+  // curred
+  return function(
+    MongoClient//: MongoClient obj <- explicit
+    ,mongoLab_URI//: str
+    ,collection_Name//: str
+    ,document_Obj//: dict
+  ) {//: => list | undefined
+    "use strict";
+    console.log(description);
+
+    var result;
+    var results = [];
+    var is_Debug_Mode = env.DEBUG_MODE.value;
+
+    !(is_Debug_Mode) || console.log(
+      "inserting:", document_Obj
+      ,"\ninto:", mongoLab_URI, collection_Name
+    );
+
+    //var collection_Promise = db_Helpers
+    var db_Collection_Promise = db_Helpers
+      .get_Collection(
+        MongoClient//: MongoClient obj <- explicit
+        ,mongoLab_URI//: str
+        //,"tests"
+        ,collection_Name//: str
+        ,null//db//: obj [db] <- optional
+        ,is_Debug_Mode//is_Debug_Mode//: bool <- optional
+    );
+
+    //return collection_Promise
+    return db_Collection_Promise
+      //.then((collection) => {
+      .then((db_Collection) => {
+          var db = db_Collection.db;
+          var collection = db_Collection.collection;
+
+          db_Helpers
+            .insert_Link_To_DB(
+              null//db//: mongoDB obj
+              ,collection//: mongoDB obj
+              ,document_Obj//: dict
+              ,null//response//: HTTP(S) obj
+              ,{}//json_Response_Obj//: dict
+              ,"testing db insert"//context_Message//: str <- optional
+              ,is_Debug_Mode//: bool <- optional
+            )
+            .then((insert_Result) => {
+                !(is_Debug_Mode) || console.log(
+                  "insert_Link_To_DB.insert_Result:", insert_Result);
+                  if (db) {
+                    db.close();
+                    !(is_Debug_Mode) || console.log("Close db after link insert");
+                  }
+                  if (collection.s.db) {
+                    collection.s.db.close();
+                    !(is_Debug_Mode) || console.log("Close collection.s.db after link insert");
+                  }
+
+                return Promise.resolve(insert_Result);
+              }
+            )
+            .catch((err) => {
+              !(is_Debug_Mode) || console.log(
+                "insert_Link_To_DB.then():", err.stack);
+              if (db) {
+                db.close();
+                !(is_Debug_Mode) || console.log("Close db after link insert");
+              }
+              if (collection.s.db) {
+                collection.s.db.close();
+                !(is_Debug_Mode) || console.log("Close collection.s.db after link insert");
+              }
+
+              return Promise.reject(err);
+            }
+          );
+        }
+      )
+      .catch((err) => {
+        !(is_Debug_Mode) || console.log(
+          "collection_Promise.then():", err.stack);
+
+        return Promise.reject(err);
+      }
+    );
+  }
+}("test 12: must " +
+"insert one document into db.collection\n " +
+"then return insertion results")
+//(MongoClient, mongoLab_URI, "tests", {"original_url": "o_L_4", "short_url": "g"})
+//(MongoClient, mongoLab_URI, "tests", {"original_url": "o_L_4", "short_url": "f"})
+//(MongoClient, mongoLab_URI, "tests", {"original_url": "o_L_5", "short_url": "f"})
+//(MongoClient, mongoLab_URI, "tests", {"original_url": "o_L_5", "short_url": "h"})
+//(MongoClient, mongoLab_URI, "tests", {"original_url": "o_L_6", "short_url": "h"})
+(MongoClient, mongoLab_URI, "tests", {"original_url": "o_L_7", "short_url": "j"})
 ;
 /*** tests end ***/
 

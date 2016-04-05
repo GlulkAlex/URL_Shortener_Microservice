@@ -679,8 +679,8 @@ var http_Server = http.createServer(
                               };
 
                               db_Helpers
-                                // TODO check & test it
-                                // TODO refactor if needed / necessary
+                                // DONE check & test it
+                                // DONE refactor if needed / necessary
                                 .insert_Link_To_DB(
                                   db,
                                   collection,
