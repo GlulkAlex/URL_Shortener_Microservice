@@ -986,7 +986,7 @@ var test_10_3 = function(description){
 "or -> undefined\n" +
 "also db object to allow to close opened current connection")
 //(MongoClient, mongoLab_URI, "tests", "o_L_0", 1)
-(MongoClient, mongoLab_URI, "tests", "o_L_1", 1)
+//(MongoClient, mongoLab_URI, "tests", "o_L_1", 1)
 //(MongoClient, mongoLab_URI, "tests", "o_L_2", 1)
 //(MongoClient, mongoLab_URI, "tests", "o_L_3", 1)
 //(MongoClient, mongoLab_URI, "tests", "o_L_4", 1)

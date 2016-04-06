@@ -489,16 +489,19 @@ function generate_Unique_Short_Link(
 }
 
 // helper
+// send_JSON_Response inside -> is not good (overload & against concern separation)
+// no need to do it inside
+// as all parameters passed from outside
 function insert_Link_To_DB(
   db//: mongoDB obj <- optional == collection.s.db;
   ,collection//: mongoDB obj
   ,document_Obj//: dict
   //request,//: HTTP(S) obj <- ? optional ?
-  ,response//: HTTP(S) obj
-  ,json_Response_Obj//: dict <- ? optional ?
+  //,response//: HTTP(S) obj
+  //,json_Response_Obj//: dict <- ? optional ?
   //host, //protocol + // + host_name
   //source_Link,// str <- optional
-  ,context_Message//: str <- optional
+  //,context_Message//: str <- optional
   ,is_Debug_Mode//: bool <- optional
 ) {//: => thenable Promise => ((null | void | Unit) | error)
   "use strict";
@@ -508,16 +511,18 @@ function insert_Link_To_DB(
   //var short_Link; // = "";// = document_Obj.short_Link
   //var source_Link;
   //var json_Response_Obj = {};
-  //var
+  var message = "? error message ?";
 
   //*** positional arguments ***//
   //*** defaults ***//
   //document_Obj = document_Obj ? document_Obj : {};
   //json_Response_Obj = json_Response_Obj ? json_Response_Obj : {};
+  /*
   if (context_Message) {
   } else {
     context_Message = "request.on 'end' query.allow insertOne";
   }
+  */
   //!(is_Debug_Mode) || console.log('db:', db);
   !(is_Debug_Mode) || console.log('db == null or undefined:', (db == null || db == undefined));
   !(is_Debug_Mode) || console.log('typeof db:', typeof(db));
@@ -560,8 +565,9 @@ function insert_Link_To_DB(
     var short_url = document_Obj.short_url;
 
     !(is_Debug_Mode) || console.log('short_url:', short_url, "provided");
+
   } else {
-    var message = 'undefined / empty document_Obj.short_url';
+    message = 'undefined / empty document_Obj.short_url';
 
     /* finally */
     if (db) {
@@ -587,20 +593,8 @@ function insert_Link_To_DB(
           .then((result) => {//.result.n
               //console.log(JSON.stringify(document_Obj));
               !(is_Debug_Mode) || console.log('inserted document_Obj: %j', document_Obj);
-              !(is_Debug_Mode) || console.log(`result.result.n: ${result.result.n}`);
+              !(is_Debug_Mode) || console.log("result.result.n:", result.result.n);
               //console.log('result.result: %j', result.result);
-
-              // guard
-              if (response) {
-                response_Helpers.
-                  send_JSON_Response(
-                    // obj -> writable stream
-                    response,
-                    json_Response_Obj,
-                    // context
-                    context_Message
-                );
-              }
 
               /* finally */
               if (db) {
@@ -608,35 +602,17 @@ function insert_Link_To_DB(
                 !(is_Debug_Mode) || console.log(`Close db after link insert `);
               }
 
-              return Promise.resolve(result.result);
+              return Promise.resolve(result.result.ok);
             }
           )
           .catch((err) => {
               // "E11000 duplicate key error index:
               // links.$original_url_text_short_url_text dup key: { : \"com\", : 0.625 }
-              !(is_Debug_Mode) || console.log('(collection / cursor).insertOne error:', err.stack);
-              json_Response_Obj = {
-                "error": err.message,
-                "message": "on links.insertOne{'short_url':" + document_Obj.short_url + //short_Link +
-                "'original_url':" + document_Obj.original_url +
-                " catch error when query.allow"
-              };
-
-              // guard
-              if (response) {
-                response_Helpers.
-                  send_JSON_Response(
-                    // obj -> writable stream
-                    response,
-                    json_Response_Obj,
-                    // context
-                    'request.on "end" query.allow .insertOne catch error'
-                );
-              }
+              !(is_Debug_Mode) || console.log('(collection / cursor).insertOne() error:', err.stack);
               /* finally */
               if (db) {
                 db.close();
-                !(is_Debug_Mode) || console.log(`Close db after link insert `);
+                !(is_Debug_Mode) || console.log("Close db after insertOne().catch()");
               }
 
               return Promise.reject(err);

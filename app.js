@@ -681,13 +681,47 @@ var http_Server = http.createServer(
                                 // DONE check & test it
                                 // DONE refactor if needed / necessary
                                 .insert_Link_To_DB(
-                                  db,
-                                  collection,
-                                  document_Obj,// dict
-                                  response,// HTTP(S) obj
-                                  json_Response_Obj,
+                                  db
+                                  ,collection
+                                  ,document_Obj// dict
+                                  //response,// HTTP(S) obj
+                                  //json_Response_Obj,
                                   //context_Message
-                                  "res.on 'end' query.allow insertOne"
+                                  //"res.on 'end' query.allow insertOne"
+                                ).then((insert_Ok) => {
+                                    // guard
+                                    if (insert_Ok) {
+                                      response_Helpers.
+                                        send_JSON_Response(
+                                          // obj -> writable stream
+                                          response,
+                                          json_Response_Obj,
+                                          // context
+                                          //context_Message
+                                          //"res.on 'end' query.allow insertOne"
+                                      );
+                                    }
+                                  }
+                                ).catch((err) => {
+                                  !(is_Debug_Mode) || console.log(
+                                    'insert_Link_To_DB.then() error:', err.message);
+                                  json_Response_Obj = {
+                                    "error": err.message,
+                                    "message": "on links.insertOne({'short_url':" +
+                                      document_Obj.short_url + //short_Link +
+                                      ", 'original_url':" + document_Obj.original_url +
+                                      "}) catch error when query.allow"
+                                  };
+
+                                  response_Helpers.
+                                    send_JSON_Response(
+                                      // obj -> writable stream
+                                      response,
+                                      json_Response_Obj,
+                                      // context
+                                      'request.on "end" query.allow insert_Link_To_DB.then() catch error'
+                                  );
+                                }
                               );
                             } else {
                             }
