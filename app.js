@@ -865,6 +865,174 @@ var http_Server = http.createServer(
                                 "Checking MongoDB for stored source_Link:", source_Link);
                               if (res.statusCode < 400) {
                                 // TODO refactor using get_Short_Link_Length(), find_Short_Link() & insert_Link_To_DB()
+                                var connection = mongo.connect(mongoLab_URI);
+
+                                connection
+                                  .then((db) => {
+                                      "use strict";
+                                      const collection = db.collection(collection_Name);
+
+                                      collection
+                                        .count({})
+                                        .then((count) => {
+                                          var search_Result_Promise;
+
+                                          collection_Size = count;
+                                          short_Link_Size = link_Gen.get_Short_Link_Length();
+
+                                          !(is_Debug_Mode) || console.log(
+                                            //`trying to find original_url == ${source_Link} in ${collection_Name}`);
+                                            "trying to find \'original_url\' ==", source_Link,
+                                            "doc in/among(st)", count, collection_Name,
+                                            "`s documents");
+                                          search_Result_Promise = db_Helpers
+                                            .find_Short_Link(
+                                              MongoClient//: MongoClient obj <- explicit
+                                              ,mongoLab_URI//: str
+                                              ,connection//: MongoClient.connect obj <- optional
+                                              ,db//: MongoClient.connect.then() obj <- optional
+                                              ,collection//: db.collection obj <- optional
+                                              ,collection_Name//: str
+                                              ,original_Link//: str
+                                              ,short_Link_Size//: int
+                                              ,is_Debug_Mode//,env.DEBUG_MODE.value
+                                          );
+
+                                          search_Result_Promise
+                                            .then((search_Result) => {
+                                                !(is_Debug_Mode) || console.log(
+                                                  "search_Result on", collection_Name,
+                                                  "is:", search_Result.document, "is_New:", search_Result.is_New);
+
+                                              // cases:
+                                              // {"document": result, "is_New": true}
+                                              // - found existed short link
+                                              // - generated new short link
+                                              // - undefined -> something goes wrong
+
+                                              if (
+                                                search_Result.document &&
+                                                !(search_Result.is_New) ) {
+                                                // found
+
+                                                //search_Result.db.close;
+                                                db.close;
+
+                                                json_Response_Obj = {
+                                                  "original_url": (
+                                                    // source_Link
+                                                    search_Result.document.original_url
+                                                  ),
+                                                  "short_url": search_Result.document.short_url,
+                                                  "message": "stored link retrieved"
+                                                };
+                                              } else if (
+                                                search_Result.document &&
+                                                search_Result.is_New ) {
+
+                                                !(is_Debug_Mode) || console.log(
+                                                  'then new stored short_Link for response', short_Link);
+                                                json_Response_Obj = {
+                                                  "original_url": (
+                                                    source_Link
+                                                  ),
+                                                  // to show ful URL
+                                                  "short_url": (request.socket.encrypted ? 'https://' : 'http://') +
+                                                  request.headers.host + "/" +
+                                                  short_Link,
+                                                  "message": "new link stored"
+                                                }
+
+                                                document_Obj = {
+                                                  "original_url": json_Response_Obj.original_url,
+                                                  // save only necessary data
+                                                  "short_url": short_Link
+                                                };
+                                                // must db.close inside
+                                                db_Helpers
+                                                  .insert_Link_To_DB(
+                                                    db,
+                                                    collection,
+                                                    document_Obj,// dict
+                                                    response,// HTTP(S) obj
+                                                    json_Response_Obj,
+                                                    //context_Message
+                                                    "res.on 'end' query.allow insertOne"
+                                                );
+                                              } else {
+                                              }
+                                              // finally
+                                              //db.close;
+                                            };
+                                          )
+                                          .catch((err) => {
+                                              !(is_Debug_Mode) || console.log(
+                                                'search_Result_Promise.then() error:', err.stack);
+                                              json_Response_Obj = {
+                                                "error": err.message,
+                                                "message": short_Link +
+                                                  " search_Result_Promise.then() catch error when query.allow"
+                                              };
+                                              response_Helpers
+                                                .send_JSON_Response(
+                                                  // obj -> writable stream
+                                                  response,
+                                                  json_Response_Obj,
+                                                  // context
+                                                  'request.on "end" query.allow search_Result_Promise.then() catch error'
+                                              );
+                                              // guard
+                                              if (db && typeof(db) == "object") {
+                                                if (db.hasOwnProperty('close')) {
+                                                  db.close();
+                                                }
+                                              }
+                                            }
+                                          );
+                                        }
+                                      )
+                                      .catch((err) => {
+                                          !(is_Debug_Mode) || console.log(
+                                            'collection.count().then() error:', err.stack);
+                                          json_Response_Obj = {
+                                            "error": err.message,
+                                            "message": "collection.count().then() catch error when query.allow"
+                                          };
+                                          response_Helpers
+                                            .send_JSON_Response(
+                                              // obj -> writable stream
+                                              response,
+                                              json_Response_Obj,
+                                              // context
+                                              'request.on "end" query.allow collection.count().then() catch error'
+                                          );
+                                          // guard
+                                          if (db && typeof(db) == "object") {
+                                            if (db.hasOwnProperty('close')) {
+                                              db.close();
+                                            }
+                                          }
+                                        }
+                                      );
+                                    }
+                                  )
+                                  .catch((err) => {
+                                    !(is_Debug_Mode) || console.log(
+                                      'mongo.db.connect error:', err.message, ";when query.allow");
+                                    json_Response_Obj = {
+                                      "error": err.message,
+                                      "message": "mongo.db.connect().then() catch error when query.allow"
+                                    };
+                                    response_Helpers
+                                      .send_JSON_Response(
+                                        // obj -> writable stream
+                                        response,
+                                        json_Response_Obj,
+                                        // context
+                                        'request.on "end" query.allow mongo.db.connect() catch error'
+                                    );
+                                  }
+                                );
 
                                     (docs) => {
                                       console.log('find result: %j', docs); 
