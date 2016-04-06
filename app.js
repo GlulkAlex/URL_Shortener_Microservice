@@ -457,6 +457,16 @@ var http_Server = http.createServer(
         // 'host/' & 'host' both return {path: '/', pathname: '/'} 
         if (is_Debug_Mode) {console.log(`request.on "end" url_Obj.path: ${url_Obj.path}`);}
 
+        // TODO https://api-url-shortener-microservice.herokuapp.com/new/https://devcenter.heroku.com/articles/getting-started-with-nodejs#push-local-changes => {"error":"Parse Error"}
+        // DONE recreate & fix locally
+        // works as expected locally, so it must be ? heroku settings ?
+        // ? get from behind heroku proxies ?
+        // also:
+        //{"error":"E11000 duplicate key error index: heroku_4mwk4dd8.links.$original_url_text_short_url_text dup key: { : \"articl\", : 0.5625 }","message":"on links.insertOne({'short_url':I, 'original_url':http://devcenter.heroku.com/articles/getting-started-with-nodejs}) catch error when query.allow = false"}
+        // DONE so, original_url_text_short_url_text <- text index must be dropped
+        // and 'http' cause no "Parse Error" error only 'https' does
+        // even redirection works with http'https_link'?allow=true
+
         //***************//
         //*** routing ***//
         //***************//
