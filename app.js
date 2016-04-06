@@ -486,8 +486,7 @@ var http_Server = http.createServer(
         } else if (
           // checking match for "/new/" (not just "/new")
           url_Obj.path.slice(0, 5) == "/new/" &&//end_Points_List[1] + "/" 
-          url_Obj.path.length > "/new/".length
-        ) {
+          url_Obj.path.length > "/new/".length ) {
           /*
           {"protocol":"http:",
           "slashes":true,"auth":null,
@@ -521,8 +520,8 @@ var http_Server = http.createServer(
               // skip `search` & all after `search`
               source_Link = source_Link.slice(0, source_Link.indexOf("?"));
               !(is_Debug_Mode) || console.log(
-                `query_Allow_Prop: ${query_Allow_Prop}`,
-                `,so source_Link: ${source_Link} considered to be correct`);
+                "query_Allow_Prop:", query_Allow_Prop,
+                ",so source_Link:", source_Link, "considered to be correct");
               /*
               1. check MongoDB if `source_Link` exist already
                 1.1 if true -> return stored `short_Link`
@@ -532,11 +531,9 @@ var http_Server = http.createServer(
                   1.2.3 return generated & stored `short_Link`
               */
               // for correct .env use `heroku local`
-              mongo
-                .connect(
-                  //url, 
-                  mongoLab_URI
-                )
+              var connection = mongo.connect(mongoLab_URI);
+
+              connection
                 .then((db) => {
                     "use strict";    
                     // db gives access to the database
@@ -566,9 +563,12 @@ var http_Server = http.createServer(
                           .find_Short_Link(
                             MongoClient//: MongoClient obj <- explicit
                             ,mongoLab_URI//: str
-                            //,collection_Name//: str
-                            ,source_Link//,original_Link//: str
-                            ,short_Link_Size
+                            ,connection//: MongoClient.connect obj <- optional
+                            ,db//: MongoClient.connect.then() obj <- optional
+                            ,collection//: db.collection obj <- optional
+                            ,collection_Name//: str
+                            ,original_Link//: str
+                            ,short_Link_Size//: int
                             ,is_Debug_Mode//,env.DEBUG_MODE.value
                         );
                         // has content / items for search
@@ -587,7 +587,8 @@ var http_Server = http.createServer(
                           .then((search_Result) => {
                               !(is_Debug_Mode) || console.log(
                                 //`query on ${collection_Name} content: ${doc}`);
-                                "search_Result on", collection_Name, "is:", search_Result);
+                                "search_Result on", collection_Name,
+                                "is:", search_Result.document, "is_New:", search_Result.is_New);
                               //console.log(`collection ${collection_Name} content.length: ${docs.length}`);
                               //console.log("collection_Name content:\n%j", docs);
 
@@ -599,9 +600,12 @@ var http_Server = http.createServer(
 
                             if (
                               search_Result.document &&
-                              !(search_Result.is_New)
-                            ) {
+                              !(search_Result.is_New) ) {
                               // found
+
+                              //search_Result.db.close;
+                              db.close;
+
                               json_Response_Obj = {
                                 //[TypeError: Cannot read property 'original_url' of undefined]
                                 "original_url": (
@@ -614,8 +618,7 @@ var http_Server = http.createServer(
                               };
                             } else if (
                               search_Result.document &&
-                              search_Result.is_New
-                            ) {
+                              search_Result.is_New ) {
                               // has no previously stored `link`
                               // not found => new
                               // must be unique within `link` collection
@@ -633,11 +636,11 @@ var http_Server = http.createServer(
                               // in collection first
                               // .then() -> .insertOne() one / first of them that does not found ?
 
-                              if (db && typeof(db) == "object") {
-                                if (db.hasOwnProperty('close')) {
-                                  db.close();
-                                }
-                              }
+                              //if (db && typeof(db) == "object") {
+                              //  if (db.hasOwnProperty('close')) {
+                              //    db.close();
+                              //  }
+                              //}
 
                               !(is_Debug_Mode) || console.log(
                                 'then new stored short_Link for response', short_Link);
@@ -673,7 +676,7 @@ var http_Server = http.createServer(
                                 // save only necessary data
                                 "short_url": short_Link
                               };
-
+                              // must db.close inside
                               db_Helpers
                                 // DONE check & test it
                                 // DONE refactor if needed / necessary
@@ -688,7 +691,8 @@ var http_Server = http.createServer(
                               );
                             } else {
                             }
-
+                            // finally
+                            //db.close;
                           };
                         )
                         .catch((err) => {
@@ -707,6 +711,12 @@ var http_Server = http.createServer(
                                 // context
                                 'request.on "end" query.allow search_Result_Promise.then() catch error'
                             );
+                            // guard
+                            if (db && typeof(db) == "object") {
+                              if (db.hasOwnProperty('close')) {
+                                db.close();
+                              }
+                            }
                           }
                         );
                       }
@@ -726,6 +736,12 @@ var http_Server = http.createServer(
                             // context
                             'request.on "end" query.allow collection.count().then() catch error'
                         );
+                        // guard
+                        if (db && typeof(db) == "object") {
+                          if (db.hasOwnProperty('close')) {
+                            db.close();
+                          }
+                        }
                       }
                     );
                   }

@@ -563,7 +563,7 @@ function insert_Link_To_DB(
   } else {
     var message = 'undefined / empty document_Obj.short_url';
 
-    /* finaly */
+    /* finally */
     if (db) {
       db.close();
       !(is_Debug_Mode) || console.log("Close db after link insert");
@@ -602,7 +602,7 @@ function insert_Link_To_DB(
                 );
               }
 
-              /* finaly */
+              /* finally */
               if (db) {
                 db.close();
                 !(is_Debug_Mode) || console.log(`Close db after link insert `);
@@ -633,7 +633,7 @@ function insert_Link_To_DB(
                     'request.on "end" query.allow .insertOne catch error'
                 );
               }
-              /* finaly */
+              /* finally */
               if (db) {
                 db.close();
                 !(is_Debug_Mode) || console.log(`Close db after link insert `);
