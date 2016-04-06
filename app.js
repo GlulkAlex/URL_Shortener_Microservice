@@ -555,7 +555,7 @@ var http_Server = http.createServer(
                       .then((count) => {
                         collection_Size = count;
                         short_Link_Size = link_Gen.get_Short_Link_Length();
-                        db.close;
+                        //db.close;
 
                         !(is_Debug_Mode) || console.log(
                           //`trying to find original_url == ${source_Link} in ${collection_Name}`);

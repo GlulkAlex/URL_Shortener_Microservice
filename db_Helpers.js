@@ -652,6 +652,9 @@ function insert_Link_To_DB(
 function find_Short_Link(
   MongoClient//: MongoClient obj <- explicit
   ,mongoLab_URI//: str
+  ,connection//: MongoClient.connect obj <- optional
+  ,db//: MongoClient.connect.then() obj <- optional
+  ,collection//: db.collection obj <- optional
   ,collection_Name//: str
   ,original_Link//: str
   ,short_Link_Size//: int
@@ -667,10 +670,79 @@ function find_Short_Link(
   var results = [];
   var short_Links = [];
 
+  // most parameters are from super / parent scope
+  function actual_Result(
+    db//: MongoClient.connect.then() obj
+    ,collection//: db.collection obj <- optional
+    ,collection_Name//: str
+    ,query//: obj
+  ) {//: => Promise | thenable ((dict | obj) | undefined | error)
+    if (collection) {
+    } else {
+      collection = db
+        .collection(collection_Name);
+    }
+
+    return collection
+      .find(
+        query
+      )
+      .project({"_id": false, "original_url": true, "short_url": 1})
+      .toArray()
+      .then((docs) => {
+          !(is_Debug_Mode) || console.log("documents found:", docs.length);
+          !(is_Debug_Mode) || console.log(docs);
+          if (is_Debug_Mode) {
+            // Logging property names and values using Array.forEach
+            Object
+              //.getOwnPropertyNames(obj)
+              .keys(docs)
+              .forEach((val, idx, array) => {
+              //!(is_Debug_Mode) ||
+              console.log(
+                val, '->', docs[val]);
+            });
+          }
+          //*** find original_Link in docs ***//
+          //var filtered = arr.filter(func);
+          results = docs.filter((doc) => {return doc.original_url == original_Link;});
+          if (results.length > 0) {
+            result = {"document": results[0], "is_New": false};//, "db": db};
+          } else {
+            //*** find Arrays / lists difference ***//
+            documents = [];
+            documents.push({"original_url": original_Link, "short_url": short_Links[0]});
+            documents.push({"original_url": original_Link, "short_url": short_Links[1]});
+            documents.push({"original_url": original_Link, "short_url": short_Links[2]});
+            documents.push({"original_url": original_Link, "short_url": short_Links[3]});
+
+            results = comparator.lists_Difference(
+              documents//: list (of obj)
+              ,docs//: list (of obj)
+              ,is_Debug_Mode
+            );
+            result = results.hasOwnProperty(0) ? results[0] : result;
+            result = {"document": result, "is_New": true};//, "db": db};
+          }
+          !(is_Debug_Mode) || console.log("result", result);
+          result.db = db;
+          //db.close();
+
+          return Promise.resolve(
+            result
+          );
+        }
+      )
+      .catch((err) => {
+        !(is_Debug_Mode) || console.log("cursor.then():", err.stack);
+        return Promise.reject(err);
+      }
+    );
+  }
   //!(env.DEBUG_MODE.value) || console.log("mongoLab_URI is:", mongoLab_URI);
   !(is_Debug_Mode) || console.log("short_Link_Size:", short_Link_Size);
-  var connection = MongoClient.connect(mongoLab_URI);//, function(err, db) {
 
+  // prepossessing
   short_Links.push(link_Gen.get_Short_Link(short_Link_Size));//, null, env.DEBUG_MODE.value));
   short_Links.push(link_Gen.get_Short_Link(short_Link_Size));
   short_Links.push(link_Gen.get_Short_Link(short_Link_Size));
@@ -697,8 +769,19 @@ function find_Short_Link(
   };
   !(is_Debug_Mode) || console.log("query: %j", query);
 
-  //return Promise.resolve(connection
-  return connection
+  if (db && collection) {
+    return actual_Result(
+      db//: MongoClient.connect.then() obj
+      ,collection//: db.collection obj <- optional
+      ,collection_Name//: str
+      ,query//: obj
+    );
+  } else {
+    if (connection) {} else {
+      connection = MongoClient.connect(mongoLab_URI);//, function(err, db) {
+    }
+    //return Promise.resolve(connection
+    return connection
       .then((db) => {
           // the new Collection instance if not in strict mode
           //var collection = db.collection(collection_Name);
@@ -708,70 +791,21 @@ function find_Short_Link(
           // to obtain / gain Promise | thenable
           // as return value
           //return collection
-          return db
-            .collection(collection_Name)
-            .find(
-              query
-            )
-            .project({"_id": false, "original_url": true, "short_url": 1})
-            .toArray()
-            .then((docs) => {
-                !(is_Debug_Mode) || console.log("documents found:", docs.length);
-                !(is_Debug_Mode) || console.log(docs);
-                if (is_Debug_Mode) {
-                  // Logging property names and values using Array.forEach
-                  Object
-                    //.getOwnPropertyNames(obj)
-                    .keys(docs)
-                    .forEach((val, idx, array) => {
-                    //!(is_Debug_Mode) ||
-                    console.log(
-                      val, '->', docs[val]);
-                  });
-                }
-                //*** find original_Link in docs ***//
-                //var filtered = arr.filter(func);
-                results = docs.filter((doc) => {return doc.original_url == original_Link;});
-                if (results.length > 0) {
-                  result = {"document": results[0], "is_New": false};
-                } else {
-                  //*** find Arrays / lists difference ***//
-                  documents = [];
-                  documents.push({"original_url": original_Link, "short_url": short_Links[0]});
-                  documents.push({"original_url": original_Link, "short_url": short_Links[1]});
-                  documents.push({"original_url": original_Link, "short_url": short_Links[2]});
-                  documents.push({"original_url": original_Link, "short_url": short_Links[3]});
-
-                  results = comparator.lists_Difference(
-                    documents//: list (of obj)
-                    ,docs//: list (of obj)
-                    ,is_Debug_Mode
-                  );
-                  result = results.hasOwnProperty(0) ? results[0] : result;
-                  result = {"document": result, "is_New": true};
-                }
-                !(is_Debug_Mode) || console.log("result", result);
-
-                db.close();
-
-                return Promise.resolve(
-                  result
-                );
-              }
-            )
-            .catch((err) => {
-              console.log("cursor.then():", err.stack);
-              return Promise.reject(err);
-            }
+          return actual_Result(
+            db//: MongoClient.connect.then() obj
+            ,collection//: db.collection obj <- optional
+            ,collection_Name//: str
+            ,query//: obj
           );
         }
-    )
-    .catch((err) => {
-      console.log("connection.then():", err.stack);
-      return Promise.reject(err);
-    }
-    //)
-  );
+      )
+      .catch((err) => {
+        !(is_Debug_Mode) || console.log("connection.then():", err.stack);
+        return Promise.reject(err);
+      }
+      //)
+    );
+  }
 }
 
 // just working code examples
