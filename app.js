@@ -900,7 +900,7 @@ var http_Server = http.createServer(
                       source_Link,
                       (res) => {
                         // 302 Found	The requested page has moved temporarily to a new URL   
-                        if (is_Debug_Mode) {console.log("Got response:", res.statusCode);}
+                        if (is_Debug_Mode) {console.log("Got response:", res.statusCode, response.statusMessage);}
                         /*
                         // to consume response body
                         // or use 'res.resume()';
@@ -911,7 +911,7 @@ var http_Server = http.createServer(
                         */
                         /* async so parent process must await for result */
                         json_Response_Obj = {
-                          "get_Response": res.statusCode,
+                          "get_Response": res.statusCode + ": " + res.statusMessage ,
                           "source_Link": source_Link
                         };  
                         if (is_Debug_Mode) {console.log(
@@ -1178,11 +1178,11 @@ var http_Server = http.createServer(
                               //writer
                               //  .end('Goodbye\n'); 
                             } else {
-                              console.log("source_Link:", source_Link, "not found in www");
+                              if (is_Debug_Mode) {console.log("source_Link:", source_Link, "not found in www");}
                               json_Response_Obj = {
-                                "get_Response": res.statusCode,
+                                "get_Response": res.statusCode + ": " + res.statusMessage,
                                 "source_Link": source_Link,
-                                "message": "not found in www"
+                                "message": "get response result"
                               };
                               response_Helpers
                                 .send_JSON_Response(
@@ -1238,7 +1238,7 @@ var http_Server = http.createServer(
                   ).on(
                       'error', 
                       (err) => {
-                        console.log(`Got error: ${err.stack}`);
+                        if (is_Debug_Mode) {console.log(`Got error: ${err.stack}`);}
                         json_Response_Obj = {
                           "error": err.message
                         };
@@ -1286,7 +1286,7 @@ var http_Server = http.createServer(
             }
             
           } else {
-            console.log('request.on "end" nothing after "new" in:', url_Obj.path);
+            if (is_Debug_Mode) {console.log('request.on "end" nothing after "new" in:', url_Obj.path);}
             json_Response_Obj = {
               "error": 'Nothing after "new" found in URL. Link expected.'
             };
@@ -1306,10 +1306,10 @@ var http_Server = http.createServer(
           - /<short_Link> -> redirect to <original_link> | error
           - /<path>/[whatever] -> redirect to / | root
           */
-          console.log('request.on "end" not "root"');    
-          console.log('request.on "end" -> Redirection');
+          if (is_Debug_Mode) {console.log('request.on "end" not "root"');}
+          if (is_Debug_Mode) {console.log('request.on "end" -> Redirection');}
           short_Link = url_Obj.path.slice(1);
-          console.log('Checking short_Link', short_Link, "format"); 
+          if (is_Debug_Mode) {console.log('Checking short_Link', short_Link, "format");}
           // "net/.html".indexOf("\/") != -1
           if (
             //url_Obj.path.indexOf("\/") == -1
@@ -1317,8 +1317,8 @@ var http_Server = http.createServer(
             /^[A-z]+$/g.test(short_Link)
           ) {
             // search for entry in db
-            console.log('request.on "end" "path" matches expected "short_Link" format'); 
-            console.log('searching for original link in db ...'); 
+            if (is_Debug_Mode) {console.log('request.on "end" "path" matches expected "short_Link" format');}
+            if (is_Debug_Mode) {console.log('searching for original link in db ...');}
             
             // for correct .env use `heroku local`
             //static MongoClient.connect(url, options, callback) => {Promise}
@@ -1336,7 +1336,7 @@ var http_Server = http.createServer(
                   "use strict";
                   // db gives access to the database
                   if (err) {
-                    console.log('mongo.connect error:', err);
+                    if (is_Debug_Mode) {console.log('mongo.connect error:', err);}
                     //throw err;
                     json_Response_Obj = {
                       "message": 'searching for original link in db ...',
@@ -1380,7 +1380,7 @@ var http_Server = http.createServer(
                           //test.equal(null, err);
                           //test.ok(r);
                       ).then((r) => {
-                        console.log(`cursor.hasNext.then`);
+                        if (is_Debug_Mode) {console.log("cursor.hasNext.then()");}
                       // next(callback) => {Promise}
                       // Get the next available `document` from the `cursor`, 
                       // returns null 
@@ -1403,7 +1403,7 @@ var http_Server = http.createServer(
                           "use strict";
                           ////assert.equal(err, null);  
                           //assert.equal(1 || 0, docs.length);
-                          console.log(`cursor.next.then`);
+                          if (is_Debug_Mode) {console.log("cursor.next.then()");}
                           if (
                             //next_err
                             false
@@ -1424,8 +1424,8 @@ var http_Server = http.createServer(
                             );
                           } else {
 
-                            console.log(
-                              collection_Name, 'collection find({"short_url":', short_Link, "}) result: %j", doc);
+                            if (is_Debug_Mode) {console.log(
+                              collection_Name, 'collection find({"short_url":', short_Link, "}) result: %j", doc);}
                             //console.log(`collection ${collection_Name} content.length: ${docs.length}`);  
                             //console.log("collection_Name content:\n%j", docs); 
 
@@ -1440,8 +1440,11 @@ var http_Server = http.createServer(
                               //doc.hasOwnProperty("original_url")
                             ) {
                               // `short_Link` found
-                              console.log(`cursor.next.then, is response.headersSent: ${response.headersSent}`);
-                              console.log(`cursor.next.then, is response.finished: ${response.finished}`);
+                              if (is_Debug_Mode) {
+                                console.log(`cursor.next.then, is response.headersSent: ${response.headersSent}`);
+                              }
+                              if (is_Debug_Mode) {
+                                console.log(`cursor.next.then, is response.finished: ${response.finished}`);}
                               /*
                               json_Response_Obj = {
                                 "original_url": doc.original_url, 
@@ -1467,8 +1470,9 @@ var http_Server = http.createServer(
                                   }
                               );
                               response.end();
-                              console.log("response.end()");
-                              console.log("Redirection to original_url:", doc.original_url, "...");
+                              if (is_Debug_Mode) {console.log("response.end()");}
+                              if (is_Debug_Mode) {
+                                console.log("Redirection to original_url:", doc.original_url, "...");}
                               // Close db
                               //db.close();
                             } else {
@@ -1490,7 +1494,7 @@ var http_Server = http.createServer(
                             }
                             // Close db
                             db.close();
-                            console.log(`Close db after search for original_url`);
+                            if (is_Debug_Mode) {console.log(`Close db after search for original_url`);}
                           }
                         }
                       )
@@ -1500,7 +1504,7 @@ var http_Server = http.createServer(
                         //catch error on mongoDB cursor.next: cursor is exhausted
                         //catch error on mongoDB cursor.next: 
                         // Cannot read property 'hasOwnProperty' of null
-                        console.log(`catch error on mongoDB cursor.next: ${err.stack}`);
+                        if (is_Debug_Mode) {console.log("catch error on mongoDB cursor.next:", err.stack);}
                         json_Response_Obj = {
                           "message": 'searching for original link in db ...',
                           "error": err.message
@@ -1518,7 +1522,7 @@ var http_Server = http.createServer(
                     })
                     .catch(
                       (err) => {
-                        console.log(`catch error on mongoDB cursor.hasNext: ${err.stack}`);
+                        if (is_Debug_Mode) {console.log("catch error on mongoDB cursor.hasNext():", err.stack);}
                         json_Response_Obj = {
                           "message": 'searching for original link in db ...',
                           "error": err.message
@@ -1557,9 +1561,10 @@ var http_Server = http.createServer(
             );
                   
           } else {
-            console.log('request.on "end" path not match expected "short_Link" format'); 
-            console.log('request.on "end" Redirection to request.headers.host: ', request.headers.host);
-            console.log(url_Obj.protocol + '://' + url_Obj.host);
+            if (is_Debug_Mode) {console.log('request.on "end" path not match expected "short_Link" format');}
+            if (is_Debug_Mode) {
+              console.log('request.on "end" Redirection to request.headers.host: ', request.headers.host);}
+            if (is_Debug_Mode) {console.log(url_Obj.protocol + '://' + url_Obj.host);}
             
             response
               .writeHead(
@@ -1577,7 +1582,7 @@ var http_Server = http.createServer(
                 }
             );
             response.end();
-            console.log('request.on "end", response.end(), Redirection to request.headers.host');
+            if (is_Debug_Mode) {console.log('request.on "end", response.end(), Redirection to request.headers.host');}
           } 
             
           //response
@@ -1599,7 +1604,7 @@ var http_Server = http.createServer(
       .on(
         'pipe', 
         (src) => {
-          console.error('something is piping into the writer');
+          if (is_Debug_Mode) {console.error('something is piping into the writer');}
           //assert.equal(src, reader);
           /*
           var prop_Count = 0;
@@ -1630,7 +1635,7 @@ var http_Server = http.createServer(
             */
             "source_Link": source_Link
           }; 
-          console.log('response.on "pipe" src json_Response_Obj: %j', json_Response_Obj);
+          if (is_Debug_Mode) {console.log('response.on "pipe" src json_Response_Obj: %j', json_Response_Obj);}
           response
             .writeHead(
               200, 
@@ -1646,7 +1651,7 @@ var http_Server = http.createServer(
           );
           /* close `writable` `stream` */
           //response.end();
-          console.log('response.on "pipe" response.end()');
+          if (is_Debug_Mode) {console.log('response.on "pipe" response.end()');}
           src.unpipe(response);
         }
     );
@@ -1656,7 +1661,7 @@ var http_Server = http.createServer(
       .on(
         'unpipe', 
         (src) => {
-          console.error('something has stopped piping into the writer');
+          if (is_Debug_Mode) {console.error('something has stopped piping into the writer');}
         }
     );
       
@@ -1664,8 +1669,8 @@ var http_Server = http.createServer(
       .on(
         'error', 
         (e) => {    
-          console.log('response on "error"');  
-          console.error(`e.code: ${e.code}, e.message: ${e.message}`);
+          if (is_Debug_Mode) {console.log('response on "error"');}
+          if (is_Debug_Mode) {console.error("e.code:", e.code, "e.message:", e.message);}
         }
     );
       
@@ -1706,8 +1711,9 @@ http_Server
   .on(
     'clientError', 
     (exception, socket) => {   
-      console.log('http_Server on "clientError"');  
-      console.error(`exception.code: ${exception.code}, exception.message: ${exception.message}`);
+      if (is_Debug_Mode) {console.log('http_Server on "clientError"');}
+      if (is_Debug_Mode) {
+        console.error(`exception.code: ${exception.code}, exception.message: ${exception.message}`);}
     }
 );
 
@@ -1715,8 +1721,8 @@ http_Server
   .on(
     'error', 
     (err) => {
-      console.log('http_Server on "error"');  
-      console.error(`err.code: ${err.code}, err.message: ${err.message}`);
+      if (is_Debug_Mode) {console.log('http_Server on "error"');}
+      if (is_Debug_Mode) {console.error(`err.code: ${err.code}, err.message: ${err.message}`);}
     }
 );
 // error.stack
@@ -1727,7 +1733,7 @@ process
 .on(
   'unhandledRejection',
   (reason, p) => {
-    console.log("Unhandled Rejection at: Promise ", p, " reason: ", reason);
+    if (is_Debug_Mode) {console.log("Unhandled Rejection at: Promise ", p, " reason: ", reason);}
     // application specific logging, throwing an error, or other logic here
 });
 /*##########################################################################*/
