@@ -795,8 +795,10 @@ var test_10 = function(description){
     "use strict";
     console.log(description);
     var connection = MongoClient.connect(mongoLab_URI);
-    var db;
-    var collection;
+    //var db = Promise.resolve(connection.then((db) => {return db;}));
+    var db;// = connection.then((_db) => {return _db;});
+    //var db = Promise.resolve(connection.then((db) => {return Promise.resolve(db);}));
+    var collection;// = Promise.resolve(db.then((_db) => {return Promise.resolve(_db.collection(collection_Name));}));
     var result = db_Helpers
       .find_Short_Link(
         MongoClient//: MongoClient obj <- explicit
@@ -810,9 +812,9 @@ var test_10 = function(description){
         ,env.DEBUG_MODE.value
     );
 
-    if (db && collection) {
-    } else if (db) {
-    } else {
+    //if (db && collection) {
+    //} else if (db) {
+    //} else {
       //return result;
       //return Promise.resolve(result
       return result
@@ -828,18 +830,163 @@ var test_10 = function(description){
         .catch((err) => {console.log("result.then():", err.stack);}
         //)
       );
-    }
+    //}
   }
 }("test 10: must " +
+"using MongoClient, mongoLab_URI without passed db & collection objects\n" +
 "find matched documents in collection if any &\n" +
 "return as Promise | thenable containing as result:\n" +
 "-> new short_Link as (from) 1st non-matched document if any\n" +
 "with all (both) field values not in db.collection\n" +
 "or -> existing short_url\n" +
-"or -> undefined" +
+"or -> undefined\n" +
 "also db object to allow to close opened current connection")
 //(MongoClient, mongoLab_URI, "tests", "o_L_0", 1)
 //(MongoClient, mongoLab_URI, "tests", "o_L_1", 1)
+//(MongoClient, mongoLab_URI, "tests", "o_L_2", 1)
+//(MongoClient, mongoLab_URI, "tests", "o_L_3", 1)
+//(MongoClient, mongoLab_URI, "tests", "o_L_4", 1)
+//(MongoClient, mongoLab_URI, "tests", "o_L_5", 1)
+///(MongoClient, mongoLab_URI, "tests", docs_Case_3)
+///(MongoClient, mongoLab_URI, "tests", docs_Case_2)
+///(MongoClient, mongoLab_URI, "tests", docs_Case_1)
+;
+
+var test_10_2 = function(description){
+  "use strict";
+  // curred
+  return function(
+    MongoClient//: MongoClient obj <- explicit
+    ,mongoLab_URI//: str
+    //,connection//: MongoClient.connect obj <- optional
+    //,db//: MongoClient.connect.then() obj <- optional
+    //,collection//: db.collection obj <- optional
+    ,collection_Name//: str
+    ,original_Link//: str
+    ,short_Link_Size//: int
+    //,documents//: list of obj
+    //,query//: query obj
+  ) {//: => Promise | thenable ((dict | obj) | undefined | error)
+    "use strict";
+    console.log(description);
+    var connection = MongoClient.connect(mongoLab_URI);
+
+    return connection
+      .then((db) => {
+        var collection;// = Promise.resolve(db.then((_db) => {return Promise.resolve(_db.collection(collection_Name));}));
+        var result = db_Helpers
+          .find_Short_Link(
+            MongoClient//: MongoClient obj <- explicit
+            ,mongoLab_URI//: str
+            ,connection//: MongoClient.connect obj <- optional
+            ,db//: MongoClient.connect.then() obj <- optional
+            ,collection//: db.collection obj <- optional
+            ,collection_Name//: str
+            ,original_Link//: str
+            ,short_Link_Size//: int
+            ,env.DEBUG_MODE.value
+        );
+
+        return result
+          .then((f_R) => {
+              console.log("f_R.document:", f_R.document, "is_New:", f_R.is_New);
+              console.log("typeof(f_R.db)", typeof(f_R.db));
+              if (f_R.db) {
+                console.log("closing db ...");
+                f_R.db.close();
+              }
+            }
+          )
+          .catch((err) => {console.log("result.then():", err.stack);}
+        );
+      }
+      )
+      .catch((err) => {console.log("connection.then():", err.stack);}
+    );
+  }
+}("test 10.2: must " +
+"using MongoClient, mongoLab_URI, db without passed collection object\n" +
+"find matched documents in collection if any &\n" +
+"return as Promise | thenable containing as result:\n" +
+"-> new short_Link as (from) 1st non-matched document if any\n" +
+"with all (both) field values not in db.collection\n" +
+"or -> existing short_url\n" +
+"or -> undefined\n" +
+"also db object to allow to close opened current connection")
+//(MongoClient, mongoLab_URI, "tests", "o_L_0", 1)
+//(MongoClient, mongoLab_URI, "tests", "o_L_1", 1)
+//(MongoClient, mongoLab_URI, "tests", "o_L_2", 1)
+//(MongoClient, mongoLab_URI, "tests", "o_L_3", 1)
+//(MongoClient, mongoLab_URI, "tests", "o_L_4", 1)
+//(MongoClient, mongoLab_URI, "tests", "o_L_5", 1)
+///(MongoClient, mongoLab_URI, "tests", docs_Case_3)
+///(MongoClient, mongoLab_URI, "tests", docs_Case_2)
+///(MongoClient, mongoLab_URI, "tests", docs_Case_1)
+;
+
+var test_10_3 = function(description){
+  "use strict";
+  // curred
+  return function(
+    MongoClient//: MongoClient obj <- explicit
+    ,mongoLab_URI//: str
+    //,connection//: MongoClient.connect obj <- optional
+    //,db//: MongoClient.connect.then() obj <- optional
+    //,collection//: db.collection obj <- optional
+    ,collection_Name//: str
+    ,original_Link//: str
+    ,short_Link_Size//: int
+    //,documents//: list of obj
+    //,query//: query obj
+  ) {//: => Promise | thenable ((dict | obj) | undefined | error)
+    "use strict";
+    console.log(description);
+    var connection = MongoClient.connect(mongoLab_URI);
+
+    return connection
+      .then((db) => {
+        var collection = db.collection(collection_Name);
+        var result = db_Helpers
+          .find_Short_Link(
+            MongoClient//: MongoClient obj <- explicit
+            ,mongoLab_URI//: str
+            ,connection//: MongoClient.connect obj <- optional
+            ,db//: MongoClient.connect.then() obj <- optional
+            ,collection//: db.collection obj <- optional
+            ,collection_Name//: str
+            ,original_Link//: str
+            ,short_Link_Size//: int
+            ,env.DEBUG_MODE.value
+        );
+
+        return result
+          .then((f_R) => {
+              console.log("f_R.document:", f_R.document, "is_New:", f_R.is_New);
+              console.log("typeof(f_R.db)", typeof(f_R.db));
+              if (f_R.db) {
+                console.log("closing db ...");
+                f_R.db.close();
+              }
+            }
+          )
+          .catch((err) => {console.log("result.then():", err.stack);}
+        );
+      }
+      )
+      .catch((err) => {console.log("connection.then():", err.stack);}
+    );
+  }
+}("test 10.3: must " +
+"using MongoClient, mongoLab_URI, db & passed collection object\n" +
+"find matched documents in collection if any &\n" +
+"return as Promise | thenable containing as result:\n" +
+"-> new short_Link as (from) 1st non-matched document if any\n" +
+"with all (both) field values not in db.collection\n" +
+"or -> existing short_url\n" +
+"or -> undefined\n" +
+"also db object to allow to close opened current connection")
+//(MongoClient, mongoLab_URI, "tests", "o_L_0", 1)
+(MongoClient, mongoLab_URI, "tests", "o_L_1", 1)
 //(MongoClient, mongoLab_URI, "tests", "o_L_2", 1)
 //(MongoClient, mongoLab_URI, "tests", "o_L_3", 1)
 //(MongoClient, mongoLab_URI, "tests", "o_L_4", 1)

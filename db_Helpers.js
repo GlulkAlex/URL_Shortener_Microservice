@@ -678,6 +678,7 @@ function find_Short_Link(
     ,query//: obj
   ) {//: => Promise | thenable ((dict | obj) | undefined | error)
     if (collection) {
+      !(is_Debug_Mode) || console.log("using passed collection parameter");
     } else {
       collection = db
         .collection(collection_Name);
@@ -768,8 +769,15 @@ function find_Short_Link(
     ]
   };
   !(is_Debug_Mode) || console.log("query: %j", query);
+  !(is_Debug_Mode) || console.log("typeof(db):", typeof(db));
+  !(is_Debug_Mode) || console.log("db instanceof Promise:", (db instanceof Promise));
+  !(is_Debug_Mode) || console.log("typeof(collection)", typeof(collection));
+  !(is_Debug_Mode) || console.log("collection instanceof Promise:", (collection instanceof Promise));
 
-  if (db && collection) {
+  if (db) {
+  //if (db && collection) {
+    !(is_Debug_Mode) || console.log("using passed db parameter");
+
     return actual_Result(
       db//: MongoClient.connect.then() obj
       ,collection//: db.collection obj <- optional
