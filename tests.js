@@ -1050,10 +1050,10 @@ var test_12 = function(description){
     var results = [];
     var is_Debug_Mode = env.DEBUG_MODE.value;
 
-    !(is_Debug_Mode) || console.log(
+    if (is_Debug_Mode) {console.log(
       "inserting:", document_Obj
       ,"\ninto:", mongoLab_URI, collection_Name
-    );
+    );}
 
     //var collection_Promise = db_Helpers
     var db_Collection_Promise = db_Helpers
@@ -1084,30 +1084,30 @@ var test_12 = function(description){
               ,is_Debug_Mode//: bool <- optional
             )
             .then((insert_Result) => {
-                !(is_Debug_Mode) || console.log(
-                  "insert_Link_To_DB.insert_Result:", insert_Result);
+                if (is_Debug_Mode) {console.log(
+                  "insert_Link_To_DB.insert_Result:", insert_Result);}
                   if (db) {
                     db.close();
-                    !(is_Debug_Mode) || console.log("Close db after link insert");
+                    if (is_Debug_Mode) {console.log("Close db after link insert");}
                   }
                   if (collection.s.db) {
                     collection.s.db.close();
-                    !(is_Debug_Mode) || console.log("Close collection.s.db after link insert");
+                    if (is_Debug_Mode) {console.log("Close collection.s.db after link insert");}
                   }
 
                 return Promise.resolve(insert_Result);
               }
             )
             .catch((err) => {
-              !(is_Debug_Mode) || console.log(
-                "insert_Link_To_DB.then():", err.stack);
+              if (is_Debug_Mode) {console.log(
+                "insert_Link_To_DB.then():", err.stack);}
               if (db) {
                 db.close();
-                !(is_Debug_Mode) || console.log("Close db after link insert");
+                if (is_Debug_Mode) {console.log("Close db after link insert");}
               }
               if (collection.s.db) {
                 collection.s.db.close();
-                !(is_Debug_Mode) || console.log("Close collection.s.db after link insert");
+                if (is_Debug_Mode) {console.log("Close collection.s.db after link insert");}
               }
 
               return Promise.reject(err);
@@ -1116,8 +1116,8 @@ var test_12 = function(description){
         }
       )
       .catch((err) => {
-        !(is_Debug_Mode) || console.log(
-          "collection_Promise.then():", err.stack);
+        if (is_Debug_Mode) {console.log(
+          "collection_Promise.then():", err.stack);}
 
         return Promise.reject(err);
       }

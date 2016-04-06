@@ -121,7 +121,7 @@ function get_Collection(
               //return db.collection(collection_Name);
             }
           ).catch((err) => {
-            !(is_Debug_Mode) || console.log("connection err:", err.stack);
+            if (is_Debug_Mode) {console.log("connection err:", err.stack);}
 
             return Promise.reject(err);
           }
@@ -135,7 +135,7 @@ function get_Collection(
     } else {
       var message = "missing MongoClient argument";
 
-      !(is_Debug_Mode) || console.log(message);
+      if (is_Debug_Mode) {console.log(message);}
 
       return Promise.reject(new Error(message));
     }
@@ -523,14 +523,14 @@ function insert_Link_To_DB(
     context_Message = "request.on 'end' query.allow insertOne";
   }
   */
-  //!(is_Debug_Mode) || console.log('db:', db);
-  !(is_Debug_Mode) || console.log('db == null or undefined:', (db == null || db == undefined));
-  !(is_Debug_Mode) || console.log('typeof db:', typeof(db));
+  //if (is_Debug_Mode) {console.log('db:', db);}
+  if (is_Debug_Mode) {console.log('db == null or undefined:', (db == null || db == undefined));}
+  if (is_Debug_Mode) {console.log('typeof db:', typeof(db));}
   if (db) {} else {
     db = collection.s.db;
-    //!(is_Debug_Mode) || console.log('collection.s.db:', db);
-    !(is_Debug_Mode) || console.log(
-      'db == null or undefined:', (db == null || db == undefined));
+    //if (is_Debug_Mode) {console.log('collection.s.db:', db);}
+    if (is_Debug_Mode) {console.log(
+      'db == null or undefined:', (db == null || db == undefined));}
   }
   //*** defaults end ***//
 
@@ -564,7 +564,7 @@ function insert_Link_To_DB(
   if (document_Obj.short_url) {
     var short_url = document_Obj.short_url;
 
-    !(is_Debug_Mode) || console.log('short_url:', short_url, "provided");
+    if (is_Debug_Mode) {console.log('short_url:', short_url, "provided");}
 
   } else {
     message = 'undefined / empty document_Obj.short_url';
@@ -572,9 +572,9 @@ function insert_Link_To_DB(
     /* finally */
     if (db) {
       db.close();
-      !(is_Debug_Mode) || console.log("Close db after link insert");
+      if (is_Debug_Mode) {console.log("Close db after link insert");}
     }
-    !(is_Debug_Mode) || console.log(message);
+    if (is_Debug_Mode) {console.log(message);}
     //new Error(message)
     return Promise.reject(new Error(message));
   }
@@ -592,14 +592,14 @@ function insert_Link_To_DB(
           )
           .then((result) => {//.result.n
               //console.log(JSON.stringify(document_Obj));
-              !(is_Debug_Mode) || console.log('inserted document_Obj: %j', document_Obj);
-              !(is_Debug_Mode) || console.log("result.result.n:", result.result.n);
+              if (is_Debug_Mode) {console.log('inserted document_Obj: %j', document_Obj);}
+              if (is_Debug_Mode) {console.log("result.result.n:", result.result.n);}
               //console.log('result.result: %j', result.result);
 
               /* finally */
               if (db) {
                 db.close();
-                !(is_Debug_Mode) || console.log(`Close db after link insert `);
+                if (is_Debug_Mode) {console.log(`Close db after link insert `);}
               }
 
               return Promise.resolve(result.result.ok);
@@ -608,11 +608,11 @@ function insert_Link_To_DB(
           .catch((err) => {
               // "E11000 duplicate key error index:
               // links.$original_url_text_short_url_text dup key: { : \"com\", : 0.625 }
-              !(is_Debug_Mode) || console.log('(collection / cursor).insertOne() error:', err.stack);
+              if (is_Debug_Mode) {console.log('(collection / cursor).insertOne() error:', err.stack);}
               /* finally */
               if (db) {
                 db.close();
-                !(is_Debug_Mode) || console.log("Close db after insertOne().catch()");
+                if (is_Debug_Mode) {console.log("Close db after insertOne().catch()");}
               }
 
               return Promise.reject(err);
@@ -654,7 +654,7 @@ function find_Short_Link(
     ,query//: obj
   ) {//: => Promise | thenable ((dict | obj) | undefined | error)
     if (collection) {
-      !(is_Debug_Mode) || console.log("using passed collection parameter");
+      if (is_Debug_Mode) {console.log("using passed collection parameter");}
     } else {
       collection = db
         .collection(collection_Name);
@@ -667,8 +667,8 @@ function find_Short_Link(
       .project({"_id": false, "original_url": true, "short_url": 1})
       .toArray()
       .then((docs) => {
-          !(is_Debug_Mode) || console.log("documents found:", docs.length);
-          !(is_Debug_Mode) || console.log(docs);
+          if (is_Debug_Mode) {console.log("documents found:", docs.length);}
+          if (is_Debug_Mode) {console.log(docs);}
           if (is_Debug_Mode) {
             // Logging property names and values using Array.forEach
             Object
@@ -701,7 +701,7 @@ function find_Short_Link(
             result = results.hasOwnProperty(0) ? results[0] : result;
             result = {"document": result, "is_New": true};//, "db": db};
           }
-          !(is_Debug_Mode) || console.log("result", result);
+          if (is_Debug_Mode) {console.log("result", result);}
           result.db = db;
           //db.close();
 
@@ -711,13 +711,13 @@ function find_Short_Link(
         }
       )
       .catch((err) => {
-        !(is_Debug_Mode) || console.log("cursor.then():", err.stack);
+        if (is_Debug_Mode) {console.log("cursor.then():", err.stack);}
         return Promise.reject(err);
       }
     );
   }
   //!(env.DEBUG_MODE.value) || console.log("mongoLab_URI is:", mongoLab_URI);
-  !(is_Debug_Mode) || console.log("short_Link_Size:", short_Link_Size);
+  if (is_Debug_Mode) {console.log("short_Link_Size:", short_Link_Size);}
 
   // prepossessing
   short_Links.push(link_Gen.get_Short_Link(short_Link_Size));//, null, env.DEBUG_MODE.value));
@@ -744,15 +744,15 @@ function find_Short_Link(
       }
     ]
   };
-  !(is_Debug_Mode) || console.log("query: %j", query);
-  !(is_Debug_Mode) || console.log("typeof(db):", typeof(db));
-  !(is_Debug_Mode) || console.log("db instanceof Promise:", (db instanceof Promise));
-  !(is_Debug_Mode) || console.log("typeof(collection)", typeof(collection));
-  !(is_Debug_Mode) || console.log("collection instanceof Promise:", (collection instanceof Promise));
+  if (is_Debug_Mode) {console.log("query: %j", query);}
+  if (is_Debug_Mode) {console.log("typeof(db):", typeof(db));}
+  if (is_Debug_Mode) {console.log("db instanceof Promise:", (db instanceof Promise));}
+  if (is_Debug_Mode) {console.log("typeof(collection)", typeof(collection));}
+  if (is_Debug_Mode) {console.log("collection instanceof Promise:", (collection instanceof Promise));}
 
   if (db) {
   //if (db && collection) {
-    !(is_Debug_Mode) || console.log("using passed db parameter");
+    if (is_Debug_Mode) {console.log("using passed db parameter");}
 
     return actual_Result(
       db//: MongoClient.connect.then() obj
@@ -784,7 +784,7 @@ function find_Short_Link(
         }
       )
       .catch((err) => {
-        !(is_Debug_Mode) || console.log("connection.then():", err.stack);
+        if (is_Debug_Mode) {console.log("connection.then():", err.stack);}
         return Promise.reject(err);
       }
       //)

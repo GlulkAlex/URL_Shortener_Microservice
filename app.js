@@ -75,11 +75,12 @@ const mongoLab_URI = (
 );
 // inline condition
 // !(true) || console.log('log'); => log
-!(is_Debug_Mode) || console.log('process.env: %j', process.env);
+if (is_Debug_Mode) {console.log('process.env: %j', process.env);}
 // for correct connection using .env
 // use `heroku local` or `heroku open [<url.path>]`
 const mongo = require('mongodb').MongoClient;
-!(is_Debug_Mode) || console.log('mongo: %j', mongo);
+//var MongoClient = mongo;
+if (is_Debug_Mode) {console.log('mongo: %j', mongo);}
 const assert = require('assert');
 const collection_Name = (
   //"docs" // <- for tests only
@@ -89,6 +90,7 @@ const collection_Name = (
 //*** application modules ***//
 // exports.get_Short_Link = short_Link_Generator;
 const short_Link_Gen = require('./short_link_generator.js');//.short_Link_Generator;
+//var link_Gen = short_Link_Gen;
 const host_Name_Validator = require('./host_Name_Validator.js');
 const db_Helpers = require('./db_Helpers.js');
 const response_Helpers = require('./response_Helpers.js');
@@ -228,8 +230,8 @@ if (input_args_list.length >= 3) {
 //console.log(`server listen on ${address}`);
 // %j work as JSON.stringify -> flatten object
 //server listen on {"address":"127.0.0.1","family":"IPv4","port":8080}
-!(is_Debug_Mode) || console.log('process.env.MONGO_URI: %j', mongo_URI);
-!(is_Debug_Mode) || console.log('process.env.MONGOLAB_URI: %j', mongoLab_URI);
+if (is_Debug_Mode) {console.log('MONGO_URI is: %j', mongo_URI);}
+if (is_Debug_Mode) {console.log('MONGOLAB_URI is: %j', mongoLab_URI);}
 
 
 var http_Server = http.createServer(
@@ -257,6 +259,7 @@ var http_Server = http.createServer(
     var query_List = [];
     var query_Allow_Prop = false;  
     var source_Link = "";
+    var original_Link = "";
     var short_Link = "";
     var short_Link_Size = 1;
     var json_Response_Obj = {}; 
@@ -320,21 +323,21 @@ var http_Server = http.createServer(
         - /<short_Link> -> redirect to <original_link> | error
         - /<path>/[whatever] -> redirect to / | root
         */
-        !(is_Debug_Mode) || console.log('request.on "end"');
+        if (is_Debug_Mode) {console.log('request.on "end"');}
         if (
           true
           //is_Debug_Mode
         ) {
-          !(is_Debug_Mode) || console.log(
-            `request.on "end" request.url: ${request.url}`);
+          if (is_Debug_Mode) {console.log(
+            `request.on "end" request.url: ${request.url}`);}
           //request.headers.referer: http://localhost:8080/new/https://devcenter.heroku.com/articles/getting-started-with-nodejs
           // all hash part #push-local-changes is lost
           // it seems like hash part is (for) client / front-end only
           /*
           so, does this really matter ?
           */
-          !(is_Debug_Mode) || console.log(
-            `request.on "end" request.headers.referer: ${request.headers.referer}`);
+          if (is_Debug_Mode) {console.log(
+            `request.on "end" request.headers.referer: ${request.headers.referer}`);}
           // from http://expressjs.com/en/api.html#req
           /*
           console.log(`request.on "end" request.baseUrl: ${request.baseUrl}`);
@@ -389,8 +392,8 @@ var http_Server = http.createServer(
         } 
         console.log('request.on "end" query_List\n%j:', query_List);
         */
-        !(is_Debug_Mode) || console.log('request.on "end" query_Allow_Prop:', query_Allow_Prop);
-        !(is_Debug_Mode) || console.log('request.on "end" url_Obj\n%j:', url_Obj);
+        if (is_Debug_Mode) {console.log('request.on "end" query_Allow_Prop:', query_Allow_Prop);}
+        if (is_Debug_Mode) {console.log('request.on "end" url_Obj\n%j:', url_Obj);}
         /*
         url formal correctness check:
             Url {
@@ -452,7 +455,7 @@ var http_Server = http.createServer(
         if (false) {          
         }  
         // 'host/' & 'host' both return {path: '/', pathname: '/'} 
-        !(is_Debug_Mode) || console.log(`request.on "end" url_Obj.path: ${url_Obj.path}`);
+        if (is_Debug_Mode) {console.log(`request.on "end" url_Obj.path: ${url_Obj.path}`);}
 
         //***************//
         //*** routing ***//
@@ -466,17 +469,17 @@ var http_Server = http.createServer(
             */
             console.log('request.on "end" path:', url_Obj.path, 'route:', end_Points_List[0]);
             //response_Body = "Try route `/api/whoami`";            
-            response_Body = index_Template_Content_Str
+            response_Body = index_Template_Content_Str;
             //303 See Other	
             // The requested page can be found under a different URL
             response
-            .writeHead(
-              200, 
-              {
-                'Content-Length': Buffer.byteLength(response_Body, 'utf8'),
-                // content-type:text/html; charset=UTF-8  
-                'Content-Type': 'text/html'//'text/plain'
-              }
+              .writeHead(
+                200,
+                {
+                  'Content-Length': Buffer.byteLength(response_Body, 'utf8'),
+                  // content-type:text/html; charset=UTF-8
+                  'Content-Type': 'text/html'//'text/plain'
+                }
             );
             response.write(
               response_Body,
@@ -498,13 +501,13 @@ var http_Server = http.createServer(
           "href":"http://freecodecamp.com/news/?allow=true"}
           */
           source_Link = url_Obj.path.slice(5);
-          !(is_Debug_Mode) || console.log(
-            'request.on "end" source_Link:', source_Link);
+          if (is_Debug_Mode) {console.log(
+            'request.on "end" source_Link:', source_Link);}
           if (
             //source_Link.length > 0
             true ) {
-            !(is_Debug_Mode) || console.log(
-              'request.on "end" something after "new/" in:', url_Obj.path);
+            if (is_Debug_Mode) {console.log(
+              'request.on "end" something after "new/" in:', url_Obj.path);}
             url_Obj = url.parse(source_Link, true);
             //console.log(`url_Obj.pathname: ${url_Obj.pathname}`);
             // ? redundant ?
@@ -519,9 +522,11 @@ var http_Server = http.createServer(
               // ? replace `search` with "" ?
               // skip `search` & all after `search`
               source_Link = source_Link.slice(0, source_Link.indexOf("?"));
-              !(is_Debug_Mode) || console.log(
+              original_Link = source_Link;
+              if (is_Debug_Mode) {console.log(
                 "query_Allow_Prop:", query_Allow_Prop,
-                ",so source_Link:", source_Link, "considered to be correct");
+                ",so source_Link:", source_Link, "considered to be correct");}
+
               /*
               1. check MongoDB if `source_Link` exist already
                 1.1 if true -> return stored `short_Link`
@@ -550,18 +555,24 @@ var http_Server = http.createServer(
                     collection
                       .count({})
                       .then((count) => {
+                        var search_Result_Promise;
+
                         collection_Size = count;
-                        short_Link_Size = link_Gen.get_Short_Link_Length();
+                        short_Link_Size = short_Link_Gen.get_Short_Link_Length();
                         //db.close;
 
-                        !(is_Debug_Mode) || console.log(
+                        if (is_Debug_Mode) {console.log(
                           //`trying to find original_url == ${source_Link} in ${collection_Name}`);
                           "trying to find \'original_url\' ==", source_Link,
                           "doc in/among(st)", count, collection_Name,
-                          "`s documents");
-                        var search_Result_Promise = db_Helpers
+                          "`s documents");}
+                        assert(source_Link != "");
+                        assert(source_Link.length > 0);
+                        assert(original_Link == source_Link);
+
+                        search_Result_Promise = db_Helpers
                           .find_Short_Link(
-                            MongoClient//: MongoClient obj <- explicit
+                            mongo//: MongoClient obj <- explicit
                             ,mongoLab_URI//: str
                             ,connection//: MongoClient.connect obj <- optional
                             ,db//: MongoClient.connect.then() obj <- optional
@@ -585,12 +596,12 @@ var http_Server = http.createServer(
                         */
                         search_Result_Promise
                           .then((search_Result) => {
-                              !(is_Debug_Mode) || console.log(
-                                //`query on ${collection_Name} content: ${doc}`);
-                                "search_Result on", collection_Name,
-                                "is:", search_Result.document, "is_New:", search_Result.is_New);
-                              //console.log(`collection ${collection_Name} content.length: ${docs.length}`);
-                              //console.log("collection_Name content:\n%j", docs);
+                            if (is_Debug_Mode) {console.log(
+                              //`query on ${collection_Name} content: ${doc}`);
+                              "search_Result on", collection_Name,
+                              "is:", search_Result.document, "is_New:", search_Result.is_New);}
+                            //console.log(`collection ${collection_Name} content.length: ${docs.length}`);
+                            //console.log("collection_Name content:\n%j", docs);
 
                             // cases:
                             // {"document": result, "is_New": true}
@@ -602,7 +613,7 @@ var http_Server = http.createServer(
                               search_Result.document &&
                               !(search_Result.is_New) ) {
                               // found
-
+                              // TODO have some problem with send response back to user
                               //search_Result.db.close;
                               db.close;
 
@@ -616,6 +627,14 @@ var http_Server = http.createServer(
                                 "short_url": search_Result.document.short_url,
                                 "message": "stored link retrieved"
                               };
+                              response_Helpers.
+                                send_JSON_Response(
+                                  // obj -> writable stream
+                                  response,
+                                  json_Response_Obj,
+                                  // context
+                                  'request.on "end" query.allow link found'
+                              );
                             } else if (
                               search_Result.document &&
                               search_Result.is_New ) {
@@ -641,9 +660,9 @@ var http_Server = http.createServer(
                               //    db.close();
                               //  }
                               //}
-
-                              !(is_Debug_Mode) || console.log(
-                                'then new stored short_Link for response', short_Link);
+                              short_Link = search_Result.document.short_url;
+                              if (is_Debug_Mode) {console.log(
+                                'about to store new short_Link in db', short_Link);}
                               json_Response_Obj = {
                                 // ? mast contain query without allow ?
                                 /*
@@ -669,13 +688,15 @@ var http_Server = http.createServer(
                                 // additional check needed
                                 short_Link,
                                 "message": "new link stored"
-                              }
-
+                              };
+                              /*
                               document_Obj = {
                                 "original_url": json_Response_Obj.original_url,
                                 // save only necessary data
                                 "short_url": short_Link
                               };
+                              */
+                              document_Obj = search_Result.document;
                               // must db.close inside
                               db_Helpers
                                 // DONE check & test it
@@ -691,11 +712,11 @@ var http_Server = http.createServer(
                                 ).then((insert_Ok) => {
                                     // guard
                                     if (insert_Ok) {
-                                      response_Helpers.
-                                        send_JSON_Response(
+                                      response_Helpers
+                                        .send_JSON_Response(
                                           // obj -> writable stream
-                                          response,
-                                          json_Response_Obj,
+                                          response
+                                          ,json_Response_Obj
                                           // context
                                           //context_Message
                                           //"res.on 'end' query.allow insertOne"
@@ -703,8 +724,8 @@ var http_Server = http.createServer(
                                     }
                                   }
                                 ).catch((err) => {
-                                  !(is_Debug_Mode) || console.log(
-                                    'insert_Link_To_DB.then() error:', err.message);
+                                  if (is_Debug_Mode) {console.log(
+                                    'insert_Link_To_DB.then() error:', err.message);}
                                   json_Response_Obj = {
                                     "error": err.message,
                                     "message": "on links.insertOne({'short_url':" +
@@ -721,18 +742,47 @@ var http_Server = http.createServer(
                                       // context
                                       'request.on "end" query.allow insert_Link_To_DB.then() catch error'
                                   );
+                                  // guard
+                                  if (db && typeof(db) == "object") {
+                                    if (db.hasOwnProperty('close')) {
+                                      db.close();
+                                    }
+                                  }
                                 }
                               );
                             } else {
+                              if (is_Debug_Mode) {console.log(
+                                  "something wrong with search_Result:", search_Result);}
+                              json_Response_Obj = {
+                                "error": "something wrong with search_Result: " + search_Result,
+                                "message": "when searching for " +
+                                  original_Link +
+                                  " in db." + collection_Name
+                              };
+
+                              response_Helpers.
+                                send_JSON_Response(
+                                  // obj -> writable stream
+                                  response,
+                                  json_Response_Obj,
+                                  // context
+                                  'request.on "end" query.allow search_Result_Promise unexpected error'
+                              );
+                              // guard
+                              if (db && typeof(db) == "object") {
+                                if (db.hasOwnProperty('close')) {
+                                  db.close();
+                                }
+                              }
                             }
                             // finally
                             //db.close;
-                          };
+                          }
                         )
                         .catch((err) => {
                             //(collection / cursor).find error: TypeError: Cannot read property 'then' of undefined
-                            !(is_Debug_Mode) || console.log(
-                              'search_Result_Promise.then() error:', err.stack);
+                            if (is_Debug_Mode) {console.log(
+                              'search_Result_Promise.then() error:', err.stack);}
                             json_Response_Obj = {
                               "error": err.message,
                               "message": short_Link + " search_Result_Promise.then() catch error when query.allow"
@@ -756,8 +806,8 @@ var http_Server = http.createServer(
                       }
                     )
                     .catch((err) => {
-                        !(is_Debug_Mode) || console.log(
-                          'collection.count().then() error:', err.stack);
+                        if (is_Debug_Mode) {console.log(
+                          'collection.count().then() error:', err.stack);}
                         json_Response_Obj = {
                           "error": err.message,
                           "message": "collection.count().then() catch error when query.allow"
@@ -765,10 +815,10 @@ var http_Server = http.createServer(
                         response_Helpers
                           .send_JSON_Response(
                             // obj -> writable stream
-                            response,
-                            json_Response_Obj,
+                            response
+                            ,json_Response_Obj
                             // context
-                            'request.on "end" query.allow collection.count().then() catch error'
+                            ,'request.on "end" query.allow collection.count().then() catch error'
                         );
                         // guard
                         if (db && typeof(db) == "object") {
@@ -781,8 +831,8 @@ var http_Server = http.createServer(
                   }
                 )
                 .catch((err) => {
-                  !(is_Debug_Mode) || console.log(
-                    'mongo.db.connect error:', err.message, ";when query.allow");
+                  if (is_Debug_Mode) {console.log(
+                    'mongo.db.connect error:', err.message, ";when query.allow");}
                   json_Response_Obj = {
                     "error": err.message,
                     "message": "mongo.db.connect().then() catch error when query.allow"
@@ -790,10 +840,10 @@ var http_Server = http.createServer(
                   response_Helpers
                     .send_JSON_Response(
                       // obj -> writable stream
-                      response,
-                      json_Response_Obj,
+                      response
+                      ,json_Response_Obj
                       // context
-                      'request.on "end" query.allow mongo.db.connect() catch error'
+                      ,'request.on "end" query.allow mongo.db.connect() catch error'
                   );
                 }
               );
@@ -820,16 +870,16 @@ var http_Server = http.createServer(
                 5xx: Server Error 
                   505 HTTP Version Not Supported
               */
-              !(is_Debug_Mode) || console.log("Checking url_Obj.protocol:", url_Obj.protocol);
+              if (is_Debug_Mode) {console.log("Checking url_Obj.protocol:", url_Obj.protocol);}
               if (
                 url_Obj.protocol == "http:" || 
                 url_Obj.protocol == "https:" ) {
-                !(is_Debug_Mode) || console.log("Checking url_Obj.host:", url_Obj.host);
+                if (is_Debug_Mode) {console.log("Checking url_Obj.host:", url_Obj.host);}
                 if (
                   // hyphens '-' must be OK within (not leading / trailing), but underscores '_' not
                   ///^([^\W\s]+)((\.)([^\W\s]+))*((\.)([^\W\s]+))$/g.test(url_Obj.host)
                   host_Name_Validator.is_Host_Name_Valid(url_Obj.host) ) {
-                  !(is_Debug_Mode) || console.log(`Checking link: ${source_Link} in www`);
+                  if (is_Debug_Mode) {console.log("Checking link:", source_Link, "in www");}
                   //Error: Protocol "https:" not supported. Expected "http:"
                   // receive 400 Bad Request	 => The request cannot be fulfilled due to bad syntax
                   // on some URL like: https://soundcloud.com/you/collection
@@ -850,7 +900,7 @@ var http_Server = http.createServer(
                       source_Link,
                       (res) => {
                         // 302 Found	The requested page has moved temporarily to a new URL   
-                        !(is_Debug_Mode) || console.log("Got response:", res.statusCode);
+                        if (is_Debug_Mode) {console.log("Got response:", res.statusCode);}
                         /*
                         // to consume response body
                         // or use 'res.resume()';
@@ -864,8 +914,8 @@ var http_Server = http.createServer(
                           "get_Response": res.statusCode,
                           "source_Link": source_Link
                         };  
-                        !(is_Debug_Mode) || console.log(
-                          'request.on "end" http.get json_Response_Obj: %j', json_Response_Obj);
+                        if (is_Debug_Mode) {console.log(
+                          'request.on "end" http.get json_Response_Obj: %j', json_Response_Obj);}
 
                         /*
                         readable.pipe(destination[, options])
@@ -885,22 +935,22 @@ var http_Server = http.createServer(
                         /**/
                         //reader
                         res
-                          .on(
-                            'error',
+                          .on('error',
                             (err) => {
-                              !(is_Debug_Mode) || console.log("res(response) from www error:", err.stack);}
+                              if (is_Debug_Mode) {console.log("res(response) from www error:", err.stack);}}
                         );
                         res
                           //.on(
-                          .once(
-                            'end', 
+                          .once('end',
                             () => {
-                              !(is_Debug_Mode) || console.log(
-                                "Checking MongoDB for stored source_Link:", source_Link);
+                              if (is_Debug_Mode) {console.log(
+                                "Checking MongoDB for stored source_Link:", source_Link);}
+                              // TODO get to https://soundcloud.com/ still return 400 ? TLS/SSL ?
                               if (res.statusCode < 400) {
-                                // TODO refactor using get_Short_Link_Length(), find_Short_Link() & insert_Link_To_DB()
+                                // DONE refactor using get_Short_Link_Length(), find_Short_Link() & insert_Link_To_DB()
                                 var connection = mongo.connect(mongoLab_URI);
 
+                                original_Link = source_Link;
                                 connection
                                   .then((db) => {
                                       "use strict";
@@ -912,16 +962,20 @@ var http_Server = http.createServer(
                                           var search_Result_Promise;
 
                                           collection_Size = count;
-                                          short_Link_Size = link_Gen.get_Short_Link_Length();
+                                          short_Link_Size = short_Link_Gen.get_Short_Link_Length();
 
-                                          !(is_Debug_Mode) || console.log(
+                                          if (is_Debug_Mode) {console.log(
                                             //`trying to find original_url == ${source_Link} in ${collection_Name}`);
                                             "trying to find \'original_url\' ==", source_Link,
                                             "doc in/among(st)", count, collection_Name,
-                                            "`s documents");
+                                            "`s documents");}
+                                          assert(source_Link != "");
+                                          assert(source_Link.length > 0);
+                                          assert(original_Link == source_Link);
+
                                           search_Result_Promise = db_Helpers
                                             .find_Short_Link(
-                                              MongoClient//: MongoClient obj <- explicit
+                                              mongo//: MongoClient obj <- explicit
                                               ,mongoLab_URI//: str
                                               ,connection//: MongoClient.connect obj <- optional
                                               ,db//: MongoClient.connect.then() obj <- optional
@@ -934,15 +988,9 @@ var http_Server = http.createServer(
 
                                           search_Result_Promise
                                             .then((search_Result) => {
-                                                !(is_Debug_Mode) || console.log(
-                                                  "search_Result on", collection_Name,
-                                                  "is:", search_Result.document, "is_New:", search_Result.is_New);
-
-                                              // cases:
-                                              // {"document": result, "is_New": true}
-                                              // - found existed short link
-                                              // - generated new short link
-                                              // - undefined -> something goes wrong
+                                              if (is_Debug_Mode) {console.log(
+                                                "search_Result on", collection_Name,
+                                                "is:", search_Result.document, "is_New:", search_Result.is_New);}
 
                                               if (
                                                 search_Result.document &&
@@ -954,18 +1002,27 @@ var http_Server = http.createServer(
 
                                                 json_Response_Obj = {
                                                   "original_url": (
-                                                    // source_Link
                                                     search_Result.document.original_url
                                                   ),
                                                   "short_url": search_Result.document.short_url,
                                                   "message": "stored link retrieved"
                                                 };
+                                                response_Helpers
+                                                  .send_JSON_Response(
+                                                    // obj -> writable stream
+                                                    response
+                                                    ,json_Response_Obj
+                                                    // context
+                                                    ,'request.on "end" link found'
+                                                );
                                               } else if (
                                                 search_Result.document &&
                                                 search_Result.is_New ) {
 
-                                                !(is_Debug_Mode) || console.log(
-                                                  'then new stored short_Link for response', short_Link);
+                                                short_Link = search_Result.document.short_url;
+
+                                                if (is_Debug_Mode) {console.log(
+                                                  'about to store new short_Link in db', short_Link);}
                                                 json_Response_Obj = {
                                                   "original_url": (
                                                     source_Link
@@ -975,45 +1032,95 @@ var http_Server = http.createServer(
                                                   request.headers.host + "/" +
                                                   short_Link,
                                                   "message": "new link stored"
-                                                }
-
-                                                document_Obj = {
-                                                  "original_url": json_Response_Obj.original_url,
-                                                  // save only necessary data
-                                                  "short_url": short_Link
                                                 };
+                                                document_Obj = search_Result.document;
                                                 // must db.close inside
                                                 db_Helpers
                                                   .insert_Link_To_DB(
-                                                    db,
-                                                    collection,
-                                                    document_Obj,// dict
-                                                    response,// HTTP(S) obj
-                                                    json_Response_Obj,
-                                                    //context_Message
-                                                    "res.on 'end' query.allow insertOne"
+                                                    db
+                                                    ,collection
+                                                    ,document_Obj// dict
+                                                  ).then((insert_Ok) => {
+                                                      // guard
+                                                      if (insert_Ok) {
+                                                        response_Helpers.
+                                                          send_JSON_Response(
+                                                            response
+                                                            ,json_Response_Obj
+                                                        );
+                                                      }
+                                                    }
+                                                  ).catch((err) => {
+                                                    if (is_Debug_Mode) {console.log(
+                                                      'insert_Link_To_DB.then() error:', err.message);}
+                                                    json_Response_Obj = {
+                                                      "error": err.message,
+                                                      "message": "on links.insertOne({'short_url':" +
+                                                        document_Obj.short_url + //short_Link +
+                                                        ", 'original_url':" + document_Obj.original_url +
+                                                        "}) catch error when query.allow = false"
+                                                    };
+
+                                                    response_Helpers.
+                                                      send_JSON_Response(
+                                                        // obj -> writable stream
+                                                        response,
+                                                        json_Response_Obj,
+                                                        // context
+                                                        'request.on "end" insert_Link_To_DB.then() catch error'
+                                                    );
+                                                    // guard
+                                                    if (db && typeof(db) == "object") {
+                                                      if (db.hasOwnProperty('close')) {
+                                                        db.close();
+                                                      }
+                                                    }
+                                                  }
                                                 );
                                               } else {
+                                                if (is_Debug_Mode) {console.log(
+                                                    "something wrong with search_Result:", search_Result);}
+                                                json_Response_Obj = {
+                                                  "error": "something wrong with search_Result: " + search_Result,
+                                                  "message": "when searching for " +
+                                                    original_Link +
+                                                    " in db." + collection_Name
+                                                };
+
+                                                response_Helpers.
+                                                  send_JSON_Response(
+                                                    // obj -> writable stream
+                                                    response,
+                                                    json_Response_Obj,
+                                                    // context
+                                                    'request.on "end" search_Result_Promise unexpected error'
+                                                );
+                                                // guard
+                                                if (db && typeof(db) == "object") {
+                                                  if (db.hasOwnProperty('close')) {
+                                                    db.close();
+                                                  }
+                                                }
                                               }
                                               // finally
                                               //db.close;
-                                            };
+                                            }
                                           )
                                           .catch((err) => {
-                                              !(is_Debug_Mode) || console.log(
-                                                'search_Result_Promise.then() error:', err.stack);
+                                              if (is_Debug_Mode) {console.log(
+                                                'search_Result_Promise.then() error:', err.stack);}
                                               json_Response_Obj = {
                                                 "error": err.message,
                                                 "message": short_Link +
-                                                  " search_Result_Promise.then() catch error when query.allow"
+                                                  " search_Result_Promise.then() catch error when query.allow = false"
                                               };
                                               response_Helpers
                                                 .send_JSON_Response(
                                                   // obj -> writable stream
-                                                  response,
-                                                  json_Response_Obj,
+                                                  response
+                                                  ,json_Response_Obj
                                                   // context
-                                                  'request.on "end" query.allow search_Result_Promise.then() catch error'
+                                                  ,'request.on "end" search_Result_Promise.then() catch error'
                                               );
                                               // guard
                                               if (db && typeof(db) == "object") {
@@ -1026,11 +1133,11 @@ var http_Server = http.createServer(
                                         }
                                       )
                                       .catch((err) => {
-                                          !(is_Debug_Mode) || console.log(
-                                            'collection.count().then() error:', err.stack);
+                                          if (is_Debug_Mode) {console.log(
+                                            'collection.count().then() error:', err.stack);}
                                           json_Response_Obj = {
                                             "error": err.message,
-                                            "message": "collection.count().then() catch error when query.allow"
+                                            "message": "collection.count().then() catch error when query.allow = false"
                                           };
                                           response_Helpers
                                             .send_JSON_Response(
@@ -1038,7 +1145,7 @@ var http_Server = http.createServer(
                                               response,
                                               json_Response_Obj,
                                               // context
-                                              'request.on "end" query.allow collection.count().then() catch error'
+                                              'request.on "end" collection.count().then() catch error'
                                           );
                                           // guard
                                           if (db && typeof(db) == "object") {
@@ -1051,147 +1158,39 @@ var http_Server = http.createServer(
                                     }
                                   )
                                   .catch((err) => {
-                                    !(is_Debug_Mode) || console.log(
-                                      'mongo.db.connect error:', err.message, ";when query.allow");
+                                    if (is_Debug_Mode) {console.log(
+                                      'mongo.db.connect error:', err.message, ";when query.allow");}
                                     json_Response_Obj = {
                                       "error": err.message,
-                                      "message": "mongo.db.connect().then() catch error when query.allow"
+                                      "message": "mongo.db.connect().then() catch error when query.allow = false"
                                     };
                                     response_Helpers
                                       .send_JSON_Response(
                                         // obj -> writable stream
-                                        response,
-                                        json_Response_Obj,
+                                        response
+                                        ,json_Response_Obj
                                         // context
-                                        'request.on "end" query.allow mongo.db.connect() catch error'
+                                        ,'request.on "end" mongo.db.connect() catch error'
                                     );
                                   }
                                 );
 
-                                    (docs) => {
-                                      console.log('find result: %j', docs); 
-                                      if (docs.length > 0) {
-                                        console.log(`source_Link:${source_Link} found, result:${docs[0].short_url}`);
-                                        json_Response_Obj = {
-                                          "get_Response": res.statusCode,
-                                          "source_Link": source_Link,
-                                          // mast return full URL
-                                          "short_url": (request.socket.encrypted ? 'https://' : 'http://') +
-                                          request.headers.host + "/" +
-                                          docs[0].short_url,
-                                          "message": "Short link found"
-                                        };
-                                        send_JSON_Response(
-                                          // obj -> writable stream
-                                          response,
-                                          json_Response_Obj,
-                                          // context 
-                                          'res.on "end" cursor.find found'  
-                                        );
-                                      } else {
-                                        console.log(`source_Link:${source_Link} not found, creating one`);
-                                        /*
-                                        json_Response_Obj = {
-                                          "get_Response": res.statusCode,
-                                          "source_Link": source_Link,
-                                          "message": "Short link not found"
-                                        };
-                                        send_JSON_Response(
-                                          // obj -> writable stream
-                                          response,
-                                          json_Response_Obj,
-                                          // context 
-                                          'res.on "end" cursor.find not found'  
-                                        );
-                                        */
-                                        .then((short_Link) => {
-                                            json_Response_Obj = {
-                                              "original_url": (
-                                                source_Link
-                                              ),
-                                              // to show ful URL
-                                              "short_url": (request.socket.encrypted ? 'https://' : 'http://') +
-                                              request.headers.host + "/" +
-                                              short_Link,
-                                              "message": "new link stored"
-                                            };
-
-                                            document_Obj = {
-                                              "original_url": json_Response_Obj.original_url,
-                                              // save only necessary data
-                                              "short_url": short_Link
-                                            };
-
-                                            db_Helpers
-                                              .insert_Link_To_DB(
-                                                db,
-                                                collection,
-                                                document_Obj,// dict
-                                                response,// HTTP(S) obj
-                                                json_Response_Obj,
-                                                //context_Message
-                                                "res.on 'end' cursor.find not found"
-                                            );
-                                          }
-                                        );
-                                      }
-                                    }
-                                  )
-                                  .catch(
-                                    (err) => {
-                                      // Unable to execute query: 
-                                      // error processing query: 
-                                      // ns=heroku_4mwk4dd8.links limit=1 skip=0
-                                      console.log(`catch error on mongoDB find cursor: ${err.stack}`);
-                                      json_Response_Obj = {
-                                        "get_Response": res.statusCode,
-                                        "source_Link": source_Link,
-                                        "message": err.message
-                                      };
-                                      send_JSON_Response(
-                                        // obj -> writable stream
-                                        response,
-                                        json_Response_Obj,
-                                        // context 
-                                        'res.on "end" cursor.find catch error'  
-                                      );
-                                    }
-                                  );
-                                }
-                              )
-                              .catch(
-                                (err) => {
-                                  console.log(`catch error on mongoDB connect: ${err.stack}`);
-                                  json_Response_Obj = {
-                                    "get_Response": res.statusCode,
-                                    "source_Link": source_Link,
-                                    "message": err.message
-                                  };
-                                  send_JSON_Response(
-                                    // obj -> writable stream
-                                    response,
-                                    json_Response_Obj,
-                                    // context 
-                                    'res.on "end" cursor.find'  
-                                  );
-                                }
-                              );
-                    
                               //writer
                               //  .end('Goodbye\n'); 
                             } else {
-                              console.log(`source_Link: ${source_Link} not found in www`);
+                              console.log("source_Link:", source_Link, "not found in www");
                               json_Response_Obj = {
                                 "get_Response": res.statusCode,
                                 "source_Link": source_Link,
-                                "message": "source_Link not found in www"                                    
+                                "message": "not found in www"
                               };
-                              send_JSON_Response(
-                                // obj -> writable stream
-                                response,
-                                json_Response_Obj,
-                                // context 
-                                'res.on "end" cursor.find'  
+                              response_Helpers
+                                .send_JSON_Response(
+                                  // obj -> writable stream
+                                  response
+                                  ,json_Response_Obj
+                                  // context
+                                  ,'res.on "end" cursor.find'
                               );
                             }                                                           
                           }
@@ -1243,12 +1242,13 @@ var http_Server = http.createServer(
                         json_Response_Obj = {
                           "error": err.message
                         };
-                        send_JSON_Response(
-                          // obj -> writable stream
-                          response,
-                          json_Response_Obj,
-                          // context 
-                          'request.on "end" error'  
+                        response_Helpers
+                          .send_JSON_Response(
+                            // obj -> writable stream
+                            response
+                            ,json_Response_Obj
+                            // context
+                            ,'request.on "end" error'
                         );
                       }
                   );
@@ -1256,12 +1256,13 @@ var http_Server = http.createServer(
                   json_Response_Obj = {
                     "error": "bad URL host"
                   };
-                  send_JSON_Response(
-                    // obj -> writable stream
-                    response,
-                    json_Response_Obj,
-                    // context 
-                    'request.on "end" error'  
+                  response_Helpers
+                    .send_JSON_Response(
+                      // obj -> writable stream
+                      response
+                      ,json_Response_Obj
+                      // context
+                      ,'request.on "end" error'
                   );
 
                 }
@@ -1273,13 +1274,13 @@ var http_Server = http.createServer(
                 json_Response_Obj = {
                   "error": "bad URL protocol"
                 };
-
-                send_JSON_Response(
-                  // obj -> writable stream
-                  response,
-                  json_Response_Obj,
-                  // context 
-                  'request.on "end" error'  
+                response_Helpers
+                  .send_JSON_Response(
+                    // obj -> writable stream
+                    response
+                    ,json_Response_Obj
+                    // context
+                    ,'request.on "end" error'
                 );
               }
             }
@@ -1288,13 +1289,14 @@ var http_Server = http.createServer(
             console.log('request.on "end" nothing after "new" in:', url_Obj.path);
             json_Response_Obj = {
               "error": 'Nothing after "new" found in URL. Link expected.'
-            };  
-            send_JSON_Response(
-              // obj -> writable stream
-              response,
-              json_Response_Obj,
-              // context 
-              'request.on "end" error'  
+            };
+            response_Helpers
+              .send_JSON_Response(
+                // obj -> writable stream
+                response
+                ,json_Response_Obj
+                // context
+                ,'request.on "end" error'
             );
           }
         } else {
@@ -1339,13 +1341,14 @@ var http_Server = http.createServer(
                     json_Response_Obj = {
                       "message": 'searching for original link in db ...',
                       "result": err.message
-                    };  
-                    send_JSON_Response(
-                      // obj -> writable stream
-                      response,
-                      json_Response_Obj,
-                      // context 
-                      'Redirection mongo.connect'  
+                    };
+                    response_Helpers
+                      .send_JSON_Response(
+                        // obj -> writable stream
+                        response
+                        ,json_Response_Obj
+                        // context
+                        ,'Redirection mongo.connect'
                     );
                   } else {
                     // scope ?
@@ -1410,17 +1413,19 @@ var http_Server = http.createServer(
                             json_Response_Obj = {
                               "message": 'searching for original link ' + source_Link + ' in db ...',
                               "result": false//next_err.message
-                            };  
-                            send_JSON_Response(
-                              // obj -> writable stream
-                              response,
-                              json_Response_Obj,
-                              // context 
-                              'Redirection cursor.next'  
+                            };
+                            response_Helpers
+                              .send_JSON_Response(
+                                // obj -> writable stream
+                                response
+                                ,json_Response_Obj
+                                // context
+                                ,'Redirection cursor.next'
                             );
                           } else {
 
-                            console.log(`${collection_Name} collection find({"short_url": ${short_Link}}) result: %j`, doc);
+                            console.log(
+                              collection_Name, 'collection find({"short_url":', short_Link, "}) result: %j", doc);
                             //console.log(`collection ${collection_Name} content.length: ${docs.length}`);  
                             //console.log("collection_Name content:\n%j", docs); 
 
@@ -1462,22 +1467,23 @@ var http_Server = http.createServer(
                                   }
                               );
                               response.end();
-                              console.log(`response.end()`);
-                              console.log(`Redirection to original_url: ${doc.original_url} ...`);
+                              console.log("response.end()");
+                              console.log("Redirection to original_url:", doc.original_url, "...");
                               // Close db
                               //db.close();
                             } else {
                               // not found
                               json_Response_Obj = {
                                 "message": 'searching for original link in db ...',
-                                "result": "short link -> not found"//false
-                              };  
-                              send_JSON_Response(
-                                // obj -> writable stream
-                                response,
-                                json_Response_Obj,
-                                // context 
-                                'Redirection cursor.next'  
+                                "result": "short link \'" + short_Link + "\' -> not found"//false
+                              };
+                              response_Helpers
+                                .send_JSON_Response(
+                                  // obj -> writable stream
+                                  response
+                                  ,json_Response_Obj
+                                  // context
+                                  ,'Redirection cursor.next'
                               );
                               // Close db
                               //db.close();
@@ -1498,8 +1504,9 @@ var http_Server = http.createServer(
                         json_Response_Obj = {
                           "message": 'searching for original link in db ...',
                           "error": err.message
-                        };  
-                        send_JSON_Response(
+                        };
+                        response_Helpers
+                        .send_JSON_Response(
                           // obj -> writable stream
                           response,
                           json_Response_Obj,
@@ -1515,8 +1522,9 @@ var http_Server = http.createServer(
                         json_Response_Obj = {
                           "message": 'searching for original link in db ...',
                           "error": err.message
-                        };  
-                        send_JSON_Response(
+                        };
+                        response_Helpers
+                        .send_JSON_Response(
                           // obj -> writable stream
                           response,
                           json_Response_Obj,
