@@ -39,7 +39,7 @@ https://api-url-shortener-microservice.herokuapp.com/
 */
 //*** Node.js modules ***//
 const http = require('http');
-const https = require('https');
+//const https = require('https');
 //var express = require('express');
 //var app = express();
 //const fs = require('fs');  
@@ -92,7 +92,7 @@ const mongo = require('mongodb').MongoClient;
 //var MongoClient = mongo;
 if (is_Debug_Mode) {
   //mongo.define.name == 'MongoClient'
-  if (mongo.hasOwnProperty(define)) {
+  if (mongo.hasOwnProperty("define")) {
     console.log("mongo.define.name:", mongo.define.name);
   } else {
     console.log("typeof mongo:", typeof(mongo));
@@ -221,7 +221,10 @@ var index_Template_Content_List = [
   '</html>'
 ];
 var index_Template_Content_Str = index_Template_Content_List.join("\n");
-var getter = https;
+var getter = (
+  http
+  //https
+);
 var response_Body; 
 var source_Link = "";
 var links_Count = 0;
@@ -945,7 +948,17 @@ var http_Server = http.createServer(
                     port: 443,// <- default
                     path: '/',
                     method: 'GET'
+                    //,headers: //An object containing request headers.
+                    //  {
+                    //    'Content-Type': 'application/x-www-form-urlencoded',
+                    // Sending a 'Content-length' header will disable the default chunked encoding.
+                    //    'Content-Length': postData.length
+                    //    ,'Expect: 100-continue'
+                    //  }
+                    //,agent: // [undefined (default) | Agent | false] //Controls Agent behavior.
+                    //,createConnection: //A function
                   };
+                  var get_Path = source_Link;
                   // for
                   // https.request(options, (res) => {});
                   //http
@@ -956,25 +969,31 @@ var http_Server = http.createServer(
                     getter = http;
                     // http.globalAgent.protocol == 'http:'
                   } else {
-                    getter = https;
+                    //getter = https;
+                    getter = http;
                     // https.globalAgent.protocol == 'https:'
                     //guard
                     if ("/new/" == source_Link.slice(0, 5)) {
                       source_Link = source_Link.slice(5);
                     }
+                    get_Path = 'http' + source_Link.slice(5);
+                    if (is_Debug_Mode) {
+                      console.log(
+                        "source_Link:", source_Link, "get_Path:", get_Path);}
                   }
 
                   getter
                     .get(
                       // extracted link (if any) goes here
                       //'http://www.google.com/index.html',
-                      //TODO somehow having "/new/" prefix before "https" url
-                      source_Link,
-                      (res) => {
+                      //DONE somehow having "/new/" prefix before "https" url
+                      //source_Link
+                      get_Path
+                      ,(res) => {
                         // 302 Found	The requested page has moved temporarily to a new URL   
                         if (is_Debug_Mode) {
                           console.log(
-                            "Got response from " + getter.globalAgent.protocol + " GET request:",
+                            "Got response from", getter.globalAgent.protocol, "GET request:",
                             res.statusCode, res.statusMessage);}
                         /*
                         // to consume response body
