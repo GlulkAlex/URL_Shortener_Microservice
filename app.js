@@ -75,12 +75,22 @@ const mongoLab_URI = (
 );
 // inline condition
 // !(true) || console.log('log'); => log
-if (is_Debug_Mode) {console.log('process.env: %j', process.env);}
+//JSON.stringify(value[, replacer[, space]])
+if (is_Debug_Mode) {
+  console.log(
+    "process.env:",
+    JSON.stringify(
+      process.env
+      ,['PORT', 'IS_DEBUG', 'DEBUG_MODE', 'MONGO_URI', 'MONGOLAB_URI', 'TEST_MONGODB']
+      // works as "pretty print"
+      ,'\t'
+    )
+  );}
 // for correct connection using .env
 // use `heroku local` or `heroku open [<url.path>]`
 const mongo = require('mongodb').MongoClient;
 //var MongoClient = mongo;
-if (is_Debug_Mode) {console.log('mongo: %j', mongo);}
+if (is_Debug_Mode) {console.log("typeof mongo:", typeof(mongo));}
 const assert = require('assert');
 const collection_Name = (
   //"docs" // <- for tests only
@@ -511,6 +521,7 @@ var http_Server = http.createServer(
           "href":"http://freecodecamp.com/news/?allow=true"}
           */
           source_Link = url_Obj.path.slice(5);
+
           if (is_Debug_Mode) {console.log(
             'request.on "end" source_Link:', source_Link);}
           if (
@@ -533,6 +544,7 @@ var http_Server = http.createServer(
               // skip `search` & all after `search`
               source_Link = source_Link.slice(0, source_Link.indexOf("?"));
               original_Link = source_Link;
+
               if (is_Debug_Mode) {console.log(
                 "query_Allow_Prop:", query_Allow_Prop,
                 ",so source_Link:", source_Link, "considered to be correct");}
@@ -623,7 +635,7 @@ var http_Server = http.createServer(
                               search_Result.document &&
                               !(search_Result.is_New) ) {
                               // found
-                              // TODO have some problem with send response back to user
+                              // DONE have some problem with send response back to user
                               //search_Result.db.close;
                               db.close;
 
@@ -635,7 +647,7 @@ var http_Server = http.createServer(
                                   //docs[0].original_url
                                 ),
                                 "short_url": search_Result.document.short_url,
-                                "message": "stored link retrieved"
+                                "message": "previously stored link retrieved"
                               };
                               response_Helpers.
                                 send_JSON_Response(
@@ -884,11 +896,13 @@ var http_Server = http.createServer(
               if (
                 url_Obj.protocol == "http:" || 
                 url_Obj.protocol == "https:" ) {
-                if (is_Debug_Mode) {console.log("Checking url_Obj.host:", url_Obj.host);}
+
+                if (is_Debug_Mode) {console.log("Checking url_Obj.host:", url_Obj.host, "...");}
                 if (
                   // hyphens '-' must be OK within (not leading / trailing), but underscores '_' not
                   ///^([^\W\s]+)((\.)([^\W\s]+))*((\.)([^\W\s]+))$/g.test(url_Obj.host)
                   host_Name_Validator.is_Host_Name_Valid(url_Obj.host) ) {
+
                   if (is_Debug_Mode) {console.log("Checking link:", source_Link, "in www");}
                   //Error: Protocol "https:" not supported. Expected "http:"
                   // receive 400 Bad Request	 => The request cannot be fulfilled due to bad syntax
@@ -947,8 +961,23 @@ var http_Server = http.createServer(
                         res
                           .on('error',
                             (err) => {
-                              if (is_Debug_Mode) {console.log("res(response) from www error:", err.stack);}}
+                              if (is_Debug_Mode) {console.log("GET", source_Link, "res(response) error:", err.stack);}
+                              json_Response_Obj = {
+                                "error": err.message,
+                                "message": source_Link +
+                                  " GET res.on(\'error\') when query.allow = false"
+                              };
+                              response_Helpers
+                                .send_JSON_Response(
+                                  // obj -> writable stream
+                                  response
+                                  ,json_Response_Obj
+                                  // context
+                                  ,"request.on \'end\' GET res.on(\'error\')"
+                              );
+                            }
                         );
+
                         res
                           //.on(
                           .once('end',
@@ -1015,7 +1044,7 @@ var http_Server = http.createServer(
                                                     search_Result.document.original_url
                                                   ),
                                                   "short_url": search_Result.document.short_url,
-                                                  "message": "stored link retrieved"
+                                                  "message": "previously stored link retrieved"
                                                 };
                                                 response_Helpers
                                                   .send_JSON_Response(
@@ -1169,7 +1198,7 @@ var http_Server = http.createServer(
                                   )
                                   .catch((err) => {
                                     if (is_Debug_Mode) {console.log(
-                                      'mongo.db.connect error:', err.message, ";when query.allow");}
+                                      "mongo.db.connect error:", err.message, "; when query.allow");}
                                     json_Response_Obj = {
                                       "error": err.message,
                                       "message": "mongo.db.connect().then() catch error when query.allow = false"
@@ -1188,7 +1217,7 @@ var http_Server = http.createServer(
                               //writer
                               //  .end('Goodbye\n'); 
                             } else {
-                              if (is_Debug_Mode) {console.log("source_Link:", source_Link, "not found in www");}
+                              if (is_Debug_Mode) {console.log("source_Link:", source_Link, "GET fails");}
                               json_Response_Obj = {
                                 "get_Response": res.statusCode + ": " + res.statusMessage,
                                 "source_Link": source_Link,
@@ -1245,7 +1274,7 @@ var http_Server = http.createServer(
                         // consume response body
                         res.resume();
                       }
-                  ).on(
+                  /*).on(
                       'error', 
                       (err) => {
                         if (is_Debug_Mode) {console.log(`Got error: ${err.stack}`);}
@@ -1260,11 +1289,13 @@ var http_Server = http.createServer(
                             // context
                             ,'request.on "end" error'
                         );
-                      }
+                      }*/
                   );
                 } else {
                   json_Response_Obj = {
-                    "error": "bad URL host"
+                    "error": "bad URL host: " + url_Obj.host
+                    ,"source_Link": source_Link
+                    ,"message": "URL syntax / format check"
                   };
                   response_Helpers
                     .send_JSON_Response(
