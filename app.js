@@ -90,7 +90,14 @@ if (is_Debug_Mode) {
 // use `heroku local` or `heroku open [<url.path>]`
 const mongo = require('mongodb').MongoClient;
 //var MongoClient = mongo;
-if (is_Debug_Mode) {console.log("typeof mongo:", typeof(mongo));}
+if (is_Debug_Mode) {
+  //mongo.define.name == 'MongoClient'
+  if (mongo.hasOwnProperty(define)) {
+    console.log("mongo.define.name:", mongo.define.name);
+  } else {
+    console.log("typeof mongo:", typeof(mongo));
+  }
+}
 const assert = require('assert');
 const collection_Name = (
   //"docs" // <- for tests only
@@ -471,9 +478,20 @@ var http_Server = http.createServer(
         //heroku[router]: at=error code=H13 desc="Connection closed without response"
         //method=GET path="/new/https://devcenter.heroku.com/articles/getting-started-with-nodejs"
         //app[web.1]: request.on "end" path: / route: /
-        //app[web.1]: http_Server on "connection" socket: ::ffff:172.16.119.174:40718
+        //app[web.1]: http_Server on "connection" socket:
         //app[web.1]: events.js:141
         //app[web.1]:       throw er; // Unhandled 'error' event
+        // ? http-parser to version 1.1
+        // includes parsing improvements to ensure closer HTTP spec conformance ?
+        // "HPE_UNEXPECTED_CONTENT_LENGTH: Parse Error"
+        // The problem seems to occur when
+        // "Content-Length": <whatever> and "Transfer-encoding": "chunked" `headers` exist together.
+        /* // ? fix ? of remote response ? //
+        if (headers['transfer-encoding'] === 'chunked') {
+            delete headers['content-length'];
+        }
+        request({url: url, headers: headers}, callback);
+        */
         //app[web.1]: Error: Parse Error
         //app[web.1]:     at Error (native)
         //app[web.1]:     at TLSSocket.socketOnData (_http_client.js:309:20)
@@ -543,7 +561,7 @@ var http_Server = http.createServer(
             //source_Link.length > 0
             true ) {
             if (is_Debug_Mode) {console.log(
-              'request.on "end" something after "new/" in:', url_Obj.path);}
+              "request.on \"end\" something after \"/new/\" in:", url_Obj.path);}
             url_Obj = url.parse(source_Link, true);
             //console.log(`url_Obj.pathname: ${url_Obj.pathname}`);
             // ? redundant ?
@@ -907,7 +925,7 @@ var http_Server = http.createServer(
                 5xx: Server Error 
                   505 HTTP Version Not Supported
               */
-              if (is_Debug_Mode) {console.log("Checking url_Obj.protocol:", url_Obj.protocol);}
+              if (is_Debug_Mode) {console.log("Checking url_Obj.protocol:", url_Obj.protocol, "...");}
               if (
                 url_Obj.protocol == "http:" || 
                 url_Obj.protocol == "https:" ) {
@@ -936,8 +954,10 @@ var http_Server = http.createServer(
                   //guard
                   if (url_Obj.protocol == "http:") {
                     getter = http;
+                    // http.globalAgent.protocol == 'http:'
                   } else {
                     getter = https;
+                    // https.globalAgent.protocol == 'https:'
                     //guard
                     if ("/new/" == source_Link.slice(0, 5)) {
                       source_Link = source_Link.slice(5);
@@ -952,7 +972,10 @@ var http_Server = http.createServer(
                       source_Link,
                       (res) => {
                         // 302 Found	The requested page has moved temporarily to a new URL   
-                        if (is_Debug_Mode) {console.log("Got response:", res.statusCode, response.statusMessage);}
+                        if (is_Debug_Mode) {
+                          console.log(
+                            "Got response from " + getter.globalAgent.protocol + " GET request:",
+                            res.statusCode, res.statusMessage);}
                         /*
                         // to consume response body
                         // or use 'res.resume()';
@@ -961,13 +984,16 @@ var http_Server = http.createServer(
                           process.stdout.write(d);
                         });
                         */
+                        //console.log('headers: ', res.headers);
                         /* async so parent process must await for result */
                         json_Response_Obj = {
-                          "get_Response": res.statusCode + ": " + res.statusMessage ,
-                          "source_Link": source_Link
+                          "get_Response": res.statusCode + ": " + res.statusMessage
+                          ,"source_Link": source_Link
+                          ,"headers": res.headers
                         };  
                         if (is_Debug_Mode) {console.log(
-                          'request.on "end" http.get json_Response_Obj: %j', json_Response_Obj);}
+                          "request.on(\"end\") " + getter.globalAgent.protocol + ".get json_Response_Obj:",
+                          JSON.stringify(json_Response_Obj, null, '\t'));}
 
                         /*
                         readable.pipe(destination[, options])
@@ -991,9 +1017,10 @@ var http_Server = http.createServer(
                             (err) => {
                               if (is_Debug_Mode) {console.log("GET", source_Link, "res(response) error:", err.stack);}
                               json_Response_Obj = {
-                                "error": err.message,
-                                "message": source_Link +
+                                "error": err.message
+                                ,"message": source_Link + " " + getter.globalAgent.protocol +
                                   " GET res.on(\'error\') when query.allow = false"
+                                ,"headers": res.headers
                               };
                               response_Helpers
                                 .send_JSON_Response(
@@ -1001,7 +1028,7 @@ var http_Server = http.createServer(
                                   response
                                   ,json_Response_Obj
                                   // context
-                                  ,"request.on \'end\' GET res.on(\'error\')"
+                                  ,"request.on(\"end\") " + getter.globalAgent.protocol + " GET res.on(\'error\')"
                               );
                             }
                         );
@@ -1013,8 +1040,19 @@ var http_Server = http.createServer(
                               if (is_Debug_Mode) {console.log(
                                 "Checking MongoDB for stored source_Link:", source_Link);}
                               // TODO get to https://soundcloud.com/ still return 400 ? TLS/SSL ?
-                              // TODO why is "/new/" prefix in path ?
+                              // DONE why is "/new/" prefix in path ? <- ? removed ?
                               //heroku[router]: at=info method=GET path="/new/https://soundcloud.com/"
+                              //"headers":
+                              //{"cache-control":"private, max-age=0",
+                              //"content-type":"text/html","date":"Thu, 07 Apr 2016 10:02:22 GMT",
+                              //"server":"am/2",
+                              //"set-cookie":[
+                              // "sc_anonymous_id=4...; path=/;
+                              // expires=Sun, 05 Apr 2026 10:02:22 GMT;
+                              // domain=.soundcloud.com"],
+                              //"via":"sssr",
+                              //"x-frame-options":"SAMEORIGIN",
+                              //"content-length":"15089","connection":"close"}
                               if (res.statusCode < 400) {
                                 // DONE refactor using get_Short_Link_Length(), find_Short_Link() & insert_Link_To_DB()
                                 var connection = mongo.connect(mongoLab_URI);
@@ -1249,9 +1287,10 @@ var http_Server = http.createServer(
                             } else {
                               if (is_Debug_Mode) {console.log("source_Link:", source_Link, "GET fails");}
                               json_Response_Obj = {
-                                "get_Response": res.statusCode + ": " + res.statusMessage,
-                                "source_Link": source_Link,
-                                "message": "get response result"
+                                "get_Response": res.statusCode + ": " + res.statusMessage
+                                ,"source_Link": source_Link
+                                ,"message": getter.globalAgent.protocol + "get response result"
+                                ,"headers": res.headers
                               };
                               response_Helpers
                                 .send_JSON_Response(
@@ -1259,7 +1298,7 @@ var http_Server = http.createServer(
                                   response
                                   ,json_Response_Obj
                                   // context
-                                  ,'res.on "end" cursor.find'
+                                  ,"res.on(\"end\") " + getter.globalAgent.protocol + "get response result"
                               );
                             }                                                           
                           }
@@ -1310,14 +1349,15 @@ var http_Server = http.createServer(
                         if (is_Debug_Mode) {console.log("GET error:", err.stack);}
                         json_Response_Obj = {
                           "error": err.code + ": " + err.message
-                          ,"message": "request.on(\"end\") GET " + source_Link + " error"
+                          ,"message": "request.on(\"end\") " + getter.globalAgent.protocol +
+                            " GET " + source_Link + " error"
                         };
                         response_Helpers
                           .send_JSON_Response(
                             response
                             ,json_Response_Obj
                             // context
-                            ,"request.on(\"end\") GET " + source_Link + " error"
+                            ,"request.on(\"end\") "  + getter.globalAgent.protocol + " GET " + source_Link + " error"
                         );
                       }
                   );
