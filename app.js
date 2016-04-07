@@ -4,7 +4,7 @@
 .env
 MONGO_URI=mongodb://localhost:27017/clementinejs
 */
-/*** config ***/
+//*** config ***//
 //const
 var env = () => {
   try {
@@ -37,7 +37,7 @@ const is_Debug_Mode = (
 for
 https://api-url-shortener-microservice.herokuapp.com/
 */
-/*** Node.js modules ***/
+//*** Node.js modules ***//
 const http = require('http');
 const https = require('https');
 //var express = require('express');
@@ -333,13 +333,13 @@ var http_Server = http.createServer(
         - /<short_Link> -> redirect to <original_link> | error
         - /<path>/[whatever] -> redirect to / | root
         */
-        if (is_Debug_Mode) {console.log('request.on "end"');}
+        if (is_Debug_Mode) {console.log("request.on \"end\"");}
         if (
           true
           //is_Debug_Mode
         ) {
           if (is_Debug_Mode) {console.log(
-            `request.on "end" request.url: ${request.url}`);}
+            "request.on \"end\" request.url:", request.url);}
           //request.headers.referer: http://localhost:8080/new/https://devcenter.heroku.com/articles/getting-started-with-nodejs
           // all hash part #push-local-changes is lost
           // it seems like hash part is (for) client / front-end only
@@ -347,7 +347,7 @@ var http_Server = http.createServer(
           so, does this really matter ?
           */
           if (is_Debug_Mode) {console.log(
-            `request.on "end" request.headers.referer: ${request.headers.referer}`);}
+            "request.on \"end\" request.headers.referer:", request.headers.referer);}
           // from http://expressjs.com/en/api.html#req
           /*
           console.log(`request.on "end" request.baseUrl: ${request.baseUrl}`);
@@ -403,7 +403,7 @@ var http_Server = http.createServer(
         console.log('request.on "end" query_List\n%j:', query_List);
         */
         if (is_Debug_Mode) {console.log('request.on "end" query_Allow_Prop:', query_Allow_Prop);}
-        if (is_Debug_Mode) {console.log('request.on "end" url_Obj\n%j:', url_Obj);}
+        if (is_Debug_Mode) {console.log("request.on \"end\" url_Obj\n:", JSON.stringify(url_Obj, null, '\t'));}
         /*
         url formal correctness check:
             Url {
@@ -465,9 +465,24 @@ var http_Server = http.createServer(
         if (false) {          
         }  
         // 'host/' & 'host' both return {path: '/', pathname: '/'} 
-        if (is_Debug_Mode) {console.log(`request.on "end" url_Obj.path: ${url_Obj.path}`);}
+        if (is_Debug_Mode) {console.log("request.on(\"end\") url_Obj.path:", url_Obj.path);}
 
         // TODO https://api-url-shortener-microservice.herokuapp.com/new/https://devcenter.heroku.com/articles/getting-started-with-nodejs#push-local-changes => {"error":"Parse Error"}
+        //heroku[router]: at=error code=H13 desc="Connection closed without response"
+        //method=GET path="/new/https://devcenter.heroku.com/articles/getting-started-with-nodejs"
+        //app[web.1]: request.on "end" path: / route: /
+        //app[web.1]: http_Server on "connection" socket: ::ffff:172.16.119.174:40718
+        //app[web.1]: events.js:141
+        //app[web.1]:       throw er; // Unhandled 'error' event
+        //app[web.1]: Error: Parse Error
+        //app[web.1]:     at Error (native)
+        //app[web.1]:     at TLSSocket.socketOnData (_http_client.js:309:20)
+        //app[web.1]:     at emitOne (events.js:77:13)
+        //app[web.1]:     at TLSSocket.emit (events.js:169:7)
+        //app[web.1]:     at readableAddChunk (_stream_readable.js:153:18)
+        //app[web.1]:     at TLSSocket.Readable.push (_stream_readable.js:111:10)
+        //app[web.1]:     at TLSWrap.onread (net.js:531:20)
+
         // DONE recreate & fix locally
         // works as expected locally, so it must be ? heroku settings ?
         // ? get from behind heroku proxies ?
@@ -487,7 +502,7 @@ var http_Server = http.createServer(
             if it decides that page content is not changing
             ? use E-Tag ?
             */
-            console.log('request.on "end" path:', url_Obj.path, 'route:', end_Points_List[0]);
+            console.log("request.on(\"end\") path:", url_Obj.path, "route:", end_Points_List[0]);
             //response_Body = "Try route `/api/whoami`";            
             response_Body = index_Template_Content_Str;
             //303 See Other	
@@ -523,7 +538,7 @@ var http_Server = http.createServer(
           source_Link = url_Obj.path.slice(5);
 
           if (is_Debug_Mode) {console.log(
-            'request.on "end" source_Link:', source_Link);}
+            "request.on(\"end\" source_Link:", source_Link);}
           if (
             //source_Link.length > 0
             true ) {
@@ -533,8 +548,8 @@ var http_Server = http.createServer(
             //console.log(`url_Obj.pathname: ${url_Obj.pathname}`);
             // ? redundant ?
             //query_Allow_Prop = url_Obj.query.allow;
-            !(is_Debug_Mode) ||console.log(
-              'request.on "end" source_Link url_Obj\n%j:', url_Obj);
+            if (is_Debug_Mode) {console.log(
+              "request.on(\"end\") \"source_Link\" url_Obj\n:", JSON.stringify(url_Obj, null, '\t'));}
             // `allow`
             if (
               //url_Obj.query.allow
@@ -916,11 +931,24 @@ var http_Server = http.createServer(
                   // for
                   // https.request(options, (res) => {});
                   //http
-                  getter = url_Obj.protocol == "http:" ? http : https;
+                  //getter = url_Obj.protocol == "http:" ? http : https;
+
+                  //guard
+                  if (url_Obj.protocol == "http:") {
+                    getter = http;
+                  } else {
+                    getter = https;
+                    //guard
+                    if ("/new/" == source_Link.slice(0, 5)) {
+                      source_Link = source_Link.slice(5);
+                    }
+                  }
+
                   getter
                     .get(
                       // extracted link (if any) goes here
-                      //'http://www.google.com/index.html', 
+                      //'http://www.google.com/index.html',
+                      //TODO somehow having "/new/" prefix before "https" url
                       source_Link,
                       (res) => {
                         // 302 Found	The requested page has moved temporarily to a new URL   
@@ -985,6 +1013,8 @@ var http_Server = http.createServer(
                               if (is_Debug_Mode) {console.log(
                                 "Checking MongoDB for stored source_Link:", source_Link);}
                               // TODO get to https://soundcloud.com/ still return 400 ? TLS/SSL ?
+                              // TODO why is "/new/" prefix in path ?
+                              //heroku[router]: at=info method=GET path="/new/https://soundcloud.com/"
                               if (res.statusCode < 400) {
                                 // DONE refactor using get_Short_Link_Length(), find_Short_Link() & insert_Link_To_DB()
                                 var connection = mongo.connect(mongoLab_URI);
@@ -1274,26 +1304,26 @@ var http_Server = http.createServer(
                         // consume response body
                         res.resume();
                       }
-                  /*).on(
+                  ).on(
                       'error', 
                       (err) => {
-                        if (is_Debug_Mode) {console.log(`Got error: ${err.stack}`);}
+                        if (is_Debug_Mode) {console.log("GET error:", err.stack);}
                         json_Response_Obj = {
-                          "error": err.message
+                          "error": err.code + ": " + err.message
+                          ,"message": "request.on(\"end\") GET " + source_Link + " error"
                         };
                         response_Helpers
                           .send_JSON_Response(
-                            // obj -> writable stream
                             response
                             ,json_Response_Obj
                             // context
-                            ,'request.on "end" error'
+                            ,"request.on(\"end\") GET " + source_Link + " error"
                         );
-                      }*/
+                      }
                   );
                 } else {
                   json_Response_Obj = {
-                    "error": "bad URL host: " + url_Obj.host
+                    "error": "bad URL host: " + url_Obj.host + " in "
                     ,"source_Link": source_Link
                     ,"message": "URL syntax / format check"
                   };
@@ -1313,7 +1343,9 @@ var http_Server = http.createServer(
                 // so it must be followed by '/'
                 // in order to be not part of a short_Link
                 json_Response_Obj = {
-                  "error": "bad URL protocol"
+                  "error": "bad URL protocol: " + url_Obj.protocol + " in "
+                  ,"source_Link": source_Link
+                  ,"message": "URL syntax / format check"
                 };
                 response_Helpers
                   .send_JSON_Response(
@@ -1321,15 +1353,16 @@ var http_Server = http.createServer(
                     response
                     ,json_Response_Obj
                     // context
-                    ,'request.on "end" error'
+                    ,"request.on(\"end\") bad URL protocol: " + url_Obj.protocol + " error"
                 );
               }
             }
             
           } else {
-            if (is_Debug_Mode) {console.log('request.on "end" nothing after "new" in:', url_Obj.path);}
+            if (is_Debug_Mode) {console.log("request.on(\"end\") nothing after \"new\" in:", url_Obj.path);}
             json_Response_Obj = {
-              "error": 'Nothing after "new" found in URL. Link expected.'
+              "error": "Nothing after \"new\" found in URL."
+              ,"message": "Link expected."
             };
             response_Helpers
               .send_JSON_Response(
@@ -1709,9 +1742,19 @@ var http_Server = http.createServer(
     response
       .on(
         'error', 
-        (e) => {    
-          if (is_Debug_Mode) {console.log('response on "error"');}
-          if (is_Debug_Mode) {console.error("e.code:", e.code, "e.message:", e.message);}
+        (err) => {
+          if (is_Debug_Mode) {console.log("response.on(\"error\")");}
+          if (is_Debug_Mode) {console.error("err.code:", err.code, "e.message:", err.message);}
+          json_Response_Obj = {
+            "message": "response.on(\"error\") handler"
+            ,"error": err.message
+          };
+          response_Helpers
+            .send_JSON_Response(
+              response
+              ,json_Response_Obj
+              ,"response.on(\"error\")"
+          );
         }
     );
       
@@ -1725,7 +1768,8 @@ http_Server
       //socket.localAddress
       //socket.localPort
       //console.log('http_Server on "connection" socket: %j', socket);
-      console.log(`http_Server on "connection" socket: ${socket.localAddress}:${socket.localPort}`);
+      if (is_Debug_Mode) {
+        console.log("http_Server on \"connection\" socket:", socket.localAddress, ":", socket.localPort);}
     }
 );
 /*
@@ -1762,10 +1806,20 @@ http_Server
   .on(
     'error', 
     (err) => {
-      if (is_Debug_Mode) {console.log('http_Server on "error"');}
-      if (is_Debug_Mode) {console.error(`err.code: ${err.code}, err.message: ${err.message}`);}
+      if (true) {console.log("http_Server.on(\"error\")");}
+      if (true) {console.error(`err.code: ${err.code}, err.message: ${err.message}`);}
     }
 );
+/*
+https
+  .on(
+    'error',
+    (err) => {
+      if (true) {console.log("http_Server.on(\"error\")");}
+      if (true) {console.error(`err.code: ${err.code}, err.message: ${err.message}`);}
+    }
+);
+*/
 // error.stack
 // Returns a string
 // describing the point in the code
