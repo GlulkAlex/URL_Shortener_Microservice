@@ -22,5 +22,6 @@
   },
   "addons": [
     "mLab:Sandbox"
-  ]  
+  ],  
+  "stack": "heroku-18"
 }
